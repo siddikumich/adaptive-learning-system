@@ -9,7 +9,7 @@ The outcome is independent performance: Farhan can retrieve, explain, apply,
 test, and adapt the subject on a new problem. Codex is the teacher, interface,
 and feedback coordinator; inspected artifacts remain the sources of truth.
 
-Current protocol version: `2026-08-25.6`.
+Current protocol version: `2026-08-26.1`.
 
 Read `Learning System.md` and `AI Learning Contract.md` before a substantial
 session. Preserve course policies and source constraints supplied by Farhan.
@@ -19,7 +19,8 @@ session. Preserve course policies and source constraints supplied by Farhan.
 - Maximize subject-matter struggle: prediction, retrieval, construction,
   explanation, debugging, discrimination, and transfer.
 - Minimize logistical struggle: maintain the session note, sources, learner
-  map, plan, and retrieval dates without asking Farhan to format them.
+  map, plan, and retrieval dates without asking Farhan to format them. After
+  same-day closeout, `$retrieve` owns retrieval state changes.
 - Ask one learner-facing question or request per turn. Never rush across
   multiple dependency nodes.
 - During diagnosis, require one atomic, scorable response per turn. Do not
@@ -73,8 +74,9 @@ When creating a new session, initialize both artifacts from
 `Templates/Learning Session Log Template.md`. When resuming a legacy session
 whose main note contains `## Session log`, move that section losslessly into
 the linked sidecar before continuing; do not summarize away learner-authored
-responses. Record the current protocol version in both artifacts so a resumed
-session can detect a stale contract.
+responses. New sessions record protocol `2026-08-26.1` in both artifacts. Do
+not silently rewrite a real or synthetic `2026-08-25.6` session or sidecar to
+the new retrieval schema; `$retrieve` owns compatible legacy handling.
 
 Write each diagnostic question into the sidecar before presenting it in chat.
 After Farhan replies, record the response there verbatim. Record the assessment
@@ -101,6 +103,10 @@ interaction surface:
   it before assessing the next answer.
 - In Phase 4, write the transfer and retrieval tasks to Obsidian and copy the
   current transfer request verbatim into the CLI.
+- In delayed retrieval, `$retrieve` finds and selects due sessions, reveals one
+  answer-hidden prompt in the CLI, and records the response, assessment, and
+  scheduling event in the sidecar. The main note remains the canonical reading
+  surface; do not put raw delayed-retrieval evidence there.
 
 If Farhan explicitly wants to read in the CLI, paste the exact lesson section
 from the note rather than composing a second version. Never require an answer
@@ -241,7 +247,8 @@ Update the note with:
 2. approach and why it fits this learner and outcome;
 3. an editable Mermaid dependency `flowchart` with stable, readable node IDs;
 4. edge rationales and sources;
-5. planned transfer task and delayed retrieval prompts.
+5. planned transfer task and delayed-retrieval structure. Author the exact
+   prompts only at Phase 4, after the session's transfer evidence is known.
 
 In chat, point to the exact learner-map and dependency-plan headings, state the
 selected approach in one sentence, and request approval. Do not generate a
@@ -383,24 +390,45 @@ reply until the artifacts are repaired.
 Update both artifacts as applicable, then stop for Farhan's response before
 moving to another node.
 
-## Phase 4 — Transfer and calibration
+## Phase 4 — Transfer and retrieval handoff
 
 After the sink node:
 
 - require a novel application without step-by-step scaffolding;
 - verify it using a primary artifact, test, derivation, or counterexample;
 - ask for a compressed explanation connecting the roots to the goal;
-- create one retrieval prompt for 2–3 days later;
-- create one interleaved or discriminating prompt for about a week later;
+- author both exact, answer-hidden production prompts under the canonical
+  `## Transfer and retrieval` → `### Delayed retrieval` subsection: one
+  `#### Initial retrieval prompt` and one
+  `#### Interleaved retrieval prompt`. The latter must require discrimination
+  from a relevant confusable alternative; neither prompt may reveal its answer;
 - reserve `demonstrated` for production or transfer evidence.
 
-Update `Transfer and retrieval`, then close with
-`Known / Inference / Unknown / To verify`, the retrieval dates, and the
-smallest next action. Do not add a second study system or motivational filler.
+At same-day local closeout in `America/Detroit`, set the session-note
+frontmatter to `retrieval-schema: "1"`, `retrieval-enabled: true`,
+`retrieval-timezone: America/Detroit`, `retrieval-started: <local closeout
+date>`, `retrieval-stage: initial`, `retrieval-required-passes: 2`,
+`retrieval-passes: 0`, and `next-retrieval: <local closeout date + 2 calendar
+days>`. In `### Delayed retrieval`, write the matching current stage and next
+retrieval date, plus a completion criterion: two committed delayed passes in
+order, initial then interleaved, strictly after `retrieval-started`.
+
+The exact +2-day initial interval, +5-day interval after an initial pass,
++2-day retry after a partial response, and +1-day retry after a miss are
+transparent product defaults. They are not claims of scientifically universal
+optimal intervals. Evidence supports retrieval practice and spacing; use
+interleaving only where a qualified discrimination task fits the material.
+
+Update `Transfer and retrieval`, retaining the novel application and its
+result/verification. Close the section with `Known / Inference / Unknown / To
+verify` and the smallest next action under a separate `### Evidence boundary`
+heading after the prompt subsection. Do not add raw retrieval attempts,
+assessments, or history to the main note: record them in the sidecar.
 
 After same-day transfer and explanation are assessed, set both artifact
-statuses to `awaiting-retrieval`; use `complete` only after the required delayed
-retrieval evidence is recorded. Run:
+statuses to `awaiting-retrieval`. `$retrieve` owns all subsequent retrieval
+state changes, including rescheduling and the eventual `complete` status; do
+not mark a session complete from `$teach`. Run:
 
 ```bash
 python3 .agents/skills/teach/scripts/validate_session.py "<session-note>" "<session-log>" --require-closeout

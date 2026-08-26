@@ -1,0 +1,7 @@
+interface:
+  display_name: "Delayed Retrieval"
+  short_description: "Run durable delayed retrieval checks"
+  default_prompt: "Use $retrieve to find my due learning-session retrieval prompts."
+
+policy:
+  allow_implicit_invocation: true

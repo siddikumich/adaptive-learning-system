@@ -1,7 +1,7 @@
 ---
 type: guide
 status: active
-updated: 2026-08-24
+updated: 2026-08-26
 ---
 
 # AI learning contract
@@ -23,8 +23,18 @@ cognitive work.
    papers, runnable code, tests, or data. AI is never the evidence source. Use
    [[Vault Source Integrity Protocol]] when a web source is incomplete or
    inaccessible.
-6. Close the chat and retrieve/solve a comparable problem one to three days
-   later. If you cannot, the learning has not yet stuck.
+6. Close the same-day lesson as `awaiting-retrieval`, then use `$retrieve` at
+   the scheduled time. It shows one answer-hidden prompt in the CLI; the
+   teacher rereads the source pack, learner map, and lesson before a
+   source-grounded correction, and the raw response and assessment stay in the
+   session-log sidecar. `complete` requires two committed delayed passes in
+   order, not a feeling of fluency.
+
+The system's +2 / +5 / +2 / +1 calendar-day schedule is a transparent product
+default (initial / passed interleaved / partial retry / miss retry), not a
+universal optimum. Retrieval and spacing are supported practices; feedback and
+interleaving need the task-sensitive interpretation summarized in
+[[Learning Research Sources]].
 
 For a structured version of this loop, use [[Codex Learning System]]. Its
 diagnostic quiz is a fast way to select the next task, not proof of mastery.

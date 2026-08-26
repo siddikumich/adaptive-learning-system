@@ -6,7 +6,7 @@ builds a verified dependency plan, teaches one node at a time, requires active
 production and transfer, and persists the durable result in linked Markdown
 artifacts.
 
-Current protocol: `2026-08-25.6`.
+Current protocol: `2026-08-26.1`.
 
 ## Start here
 
@@ -19,6 +19,9 @@ Current protocol: `2026-08-25.6`.
 
 - `.agents/skills/teach/` — adaptive teaching protocol and deterministic
   session validator.
+- `.agents/skills/retrieve/` — due-session discovery, answer-hidden delayed
+  retrieval, transactional sidecar evidence, scheduling, and completion
+  validation.
 - `.agents/skills/learning-visuals/` — Obsidian-native Mermaid/SVG contract.
 - `.codex/agents/` — bounded researcher, verifier, and visualizer model roles.
 - `Templates/` — linked learner-facing session and teacher-facing log.
@@ -57,6 +60,19 @@ python3 .agents/skills/teach/scripts/validate_session.py \
 Use `--require-closeout` after same-day transfer. The validator enforces the
 artifact structure and synchronization; the teacher/verifier must still audit
 whether a transfer semantically covers every clause of the learning goal.
+
+## Run delayed retrieval
+
+List due sessions without mutating the vault:
+
+```bash
+python3 .agents/skills/retrieve/scripts/retrieval_state.py discover . --json
+```
+
+The `$retrieve` skill prepares exactly one due prompt, keeps raw answers and
+assessments in the linked sidecar, and advances to `complete` only after two
+ordered delayed passes. The documented intervals are configurable product
+defaults, not claims of universal optimality.
 
 ## Privacy boundary
 

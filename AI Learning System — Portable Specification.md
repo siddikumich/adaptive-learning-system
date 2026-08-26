@@ -1,7 +1,8 @@
 ---
 type: specification
 status: active
-version: 1.5
+version: 1.6
+protocol-version: "2026-08-26.1"
 updated: 2026-08-26
 tags:
   - learnings
@@ -131,6 +132,25 @@ section losslessly into the sidecar before continuing.
 The structured session-note sections are the current state. The sidecar is
 supporting evidence, not a substitute for the learner map or lessons.
 
+### Retrieval v1 state
+
+New sessions use protocol `2026-08-26.1` and carry these session-note
+properties: `retrieval-schema: "1"`, `retrieval-enabled: true`,
+`retrieval-timezone: America/Detroit`, `retrieval-started`, `retrieval-stage`,
+`retrieval-required-passes: 2`, `retrieval-passes`, and `next-retrieval`.
+At same-day closeout, `retrieval-started` is that local calendar date, stage is
+`initial`, passes are `0`, and `next-retrieval` is two calendar days later.
+
+The `## Transfer and retrieval` section preserves the novel application and
+result/verification. Its one `### Delayed retrieval` subsection has the
+completion criterion, current stage, next retrieval, and exact answer-hidden
+production prompts under `#### Initial retrieval prompt` and
+`#### Interleaved retrieval prompt`. Raw delayed-retrieval responses,
+assessments, and history remain in the linked sidecar. Put the closeout's
+`Known / Inference / Unknown / To verify / Smallest next action` fields after
+the prompts under a separate `### Evidence boundary` heading so they can never
+be emitted as part of a learner-facing prompt.
+
 ## Interaction contract
 
 - Ask exactly one learner-facing question or request per turn.
@@ -155,6 +175,14 @@ second explanation. Apply the same rule to Phase 2 plans and Phase 4 transfer
 tasks: point to the canonical section and copy any active request verbatim.
 Accept answers and approvals in chat. If the learner requests full content in
 chat, copy it exactly from the note.
+
+For delayed retrieval, the provider finds due eligible notes, chooses the
+oldest/most overdue one deterministically, and reveals exactly one current
+prompt without its answer in the interaction surface. Before grading, reread
+the source pack, learner map, and completed lesson. After the learner responds,
+give a source-grounded correction and write raw evidence to the sidecar.
+Exclude synthetic harnesses and disabled sessions. The session note remains the
+canonical reading surface; chat or CLI remains the answer surface.
 
 ## Phase 0 — Establish
 
@@ -355,13 +383,30 @@ After the sink node:
 2. Verify the result using a primary artifact, test, derivation, data, or
    counterexample.
 3. Ask for a compressed explanation connecting the graph roots to the goal.
-4. Write one retrieval prompt for 2–3 days later.
-5. Write one interleaved or discriminating prompt for about a week later.
-6. Close with `Known / Inference / Unknown / To verify`, dates, and the
-   smallest next action.
-7. Set both artifacts to `awaiting-retrieval` after same-day closeout; use
-   `complete` only after delayed retrieval evidence is recorded. Validate the
-   closed state separately from an active teaching check.
+4. Author two exact answer-hidden production prompts: initial retrieval and a
+   later interleaved/discriminating prompt.
+5. At local closeout, set `retrieval-started` to the current local date and
+   schedule the initial prompt for two calendar days later.
+6. Close with `Known / Inference / Unknown / To verify` and the smallest next
+   action.
+7. Set both artifacts to `awaiting-retrieval`. The retrieve workflow, not the
+   same-day teaching workflow, owns later state changes and can mark
+   `complete` only after committed delayed evidence is validated.
+
+### Delayed retrieval policy
+
+An initial pass schedules the interleaved prompt from the actual local
+assessment date plus five calendar days. A partial response retries the same
+stage after two days; a miss retries it after one; an ungradable response does
+not advance. An interleaved pass completes the session only when two committed
+passes appear in order and strictly after `retrieval-started`.
+
+The +2 / +5 / +2 / +1 intervals are transparent product defaults, not claims
+of scientific optimality for every learner or topic. Retrieval practice and
+spacing have supporting evidence; corrective feedback is supported in
+computer-based-learning research; interleaving should be used cautiously and
+where the material supports meaningful discrimination. See the direct sources
+in [[Learning Research Sources]].
 
 ## Visual contract
 
@@ -480,6 +525,10 @@ topic:
 - writes delayed retrieval prompts and dates;
 - moves a same-day finished session to `awaiting-retrieval` and passes a
   deterministic closeout validation distinct from active-check validation;
+- selects exactly one due prompt without revealing its answer, records delayed
+  retrieval evidence only in the sidecar, reschedules it from observed
+  performance, and rejects `complete` unless ordered delayed-pass evidence is
+  verifiable;
 - accurately reports any unavailable capability or incomplete check.
 
 ## Current Codex adapter
@@ -495,7 +544,8 @@ As of 2026-08-26, the local implementation maps this specification to:
   `Templates/Learning Session Log Template.md` — persistence schema;
 - `.agents/skills/teach/scripts/validate_session.py` — deterministic structural,
   backlink, protocol-version, status, active-check synchronization, and
-  same-day closeout checks.
+  same-day closeout checks; it delegates completed delayed-retrieval evidence
+  checks to the retrieve helper when available.
 
 These paths are implementation details. [[Codex Learning System]] explains how
 to invoke the current Sol High teacher and the role-specific model adapter.

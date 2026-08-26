@@ -3,6 +3,12 @@
 .agents/skills/teach/scripts/validate_session.py
 .agents/skills/learning-visuals/SKILL.md
 .agents/skills/learning-visuals/agents/openai.yaml
+.agents/skills/retrieve/SKILL.md
+.agents/skills/retrieve/agents/openai.yaml
+.agents/skills/retrieve/references/assessment.md
+.agents/skills/retrieve/references/protocol.md
+.agents/skills/retrieve/scripts/retrieval_state.py
+.agents/skills/retrieve/tests/test_retrieval_state.py
 .codex/agents/learning-researcher.toml
 .codex/agents/learning-verifier.toml
 .codex/agents/learning-visualizer.toml

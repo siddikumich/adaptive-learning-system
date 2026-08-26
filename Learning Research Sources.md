@@ -1,6 +1,6 @@
 ---
 type: sources
-updated: 2026-08-11
+updated: 2026-08-26
 ---
 
 # Learning research sources
@@ -29,6 +29,24 @@ every minute.
 - [Cornell guidance on AI and academic integrity](https://teaching.cornell.edu/generative-artificial-intelligence/ai-academic-integrity): course policies govern acceptable use; submitted work may require attribution, and students must be able to explain their work.
 
 ## Evidence cautions
+
+### Retrieval-system interpretation
+
+Verified on 2026-08-26: the linked [Karpicke & Blunt
+abstract](https://pubmed.ncbi.nlm.nih.gov/21252317/) reports delayed-learning
+advantages for retrieval practice; the [What Works Clearinghouse
+guide](https://ies.ed.gov/ncee/wwc/PracticeGuide/1) recommends spacing learning
+over time and using quizzing; [Van der Kleij et al.
+(2015)](https://doi.org/10.3102/0034654314564881) reports stronger outcomes for
+elaborated than correctness-only computer-based feedback; and [Brunmair &
+Richter (2019)](https://pubmed.ncbi.nlm.nih.gov/31556629/) reports a moderate,
+material-dependent interleaving effect with cautions for some materials.
+
+These sources support retrieval, distributed practice, source-grounded
+corrective feedback, and qualified use of interleaving. They do **not**
+establish the learning system's +2-day initial, +5-day post-pass, +2-day
+partial-retry, or +1-day miss-retry intervals as universal optima; those are
+explicit product defaults to inspect and revise from local evidence.
 
 - AI-learning studies are rapidly evolving and context-dependent. Use the
   protocol because it preserves effortful practice and verification, not because

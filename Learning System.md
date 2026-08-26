@@ -83,12 +83,28 @@ visuals contain only the supplied input.
 The same preflight rejects non-Obsidian math delimiters: use `$...$` inline and
 `$$` display blocks, never `\(...\)` or `\[...\]`.
 
-The same-day session ends with a transfer task, dated retrieval prompts, and
-an `awaiting-retrieval` closeout validated separately from an active check.
-This adds
-the missing calibration loop without turning the vault into a transcript
-archive: keep sessions that contain a durable learner map, decision, source
-trail, or retrieval artifact, and discard empty experiments.
+The same-day session ends with a transfer task and an `awaiting-retrieval`
+closeout validated separately from an active check. Then use `$retrieve`: it
+finds eligible due sessions, deterministically chooses the oldest/most
+overdue one, reveals exactly one answer-hidden prompt in the CLI, and records
+the raw response, source-grounded assessment, and rescheduling decision in the
+linked sidecar. It excludes synthetic harnesses and retrieval-disabled
+sessions. Obsidian remains the canonical reading surface; the CLI is only the
+answer surface. `complete` follows only after the two ordered delayed passes
+are committed in the sidecar, not after a same-day lesson.
+
+The +2-day initial prompt, +5-day post-pass interleaved prompt, +2-day partial
+retry, and +1-day miss retry are transparent system defaults rather than
+scientific claims of universal optimality. Retrieval practice and distributed
+practice have supporting evidence; corrective feedback has evidence in
+computer-based learning; interleaving is qualified by material and task.
+See [Karpicke & Blunt (2011)](https://pubmed.ncbi.nlm.nih.gov/21252317/), the
+[What Works Clearinghouse guide](https://ies.ed.gov/ncee/wwc/PracticeGuide/1),
+[Van der Kleij et al. (2015)](https://doi.org/10.3102/0034654314564881), and
+[Brunmair & Richter (2019)](https://pubmed.ncbi.nlm.nih.gov/31556629/).
+This keeps a durable calibration loop without turning the vault into a
+transcript archive: keep sessions that contain a durable learner map,
+decision, source trail, or retrieval artifact, and discard empty experiments.
 
 ## Class and reading workflow
 
@@ -111,12 +127,15 @@ only when an idea survives beyond a single course or project.
 ## Study cadence
 
 - **Same day:** a brief closed-note recall or one representative problem.
-- **2–3 days later:** retrieve again; correct misses from the source.
-- **About a week later:** mixed practice with similar, confusable concepts.
+- **2 days later:** use `$retrieve` for the initial answer-hidden production
+  prompt.
+- **After an initial pass:** `$retrieve` schedules an interleaved,
+  discriminating prompt for 5 calendar days later; partial and miss outcomes
+  retry the same stage in 2 and 1 calendar days respectively.
 - **2–3 weeks later:** retrieve only ideas still likely to matter.
 
-Use the timing as a starting point, not a streak. A miss is a signal to revisit,
-not evidence that you are failing.
+These are product defaults, not an optimal schedule for every learner or
+domain. A miss is a signal to revisit, not evidence that you are failing.
 
 ## Technical practice
 

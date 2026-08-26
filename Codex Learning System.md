@@ -78,6 +78,27 @@ neither replaces Farhan's attempt or the primary artifact.
 6. Requires a novel transfer task, records delayed retrieval prompts, and
    closes the same-day session as `awaiting-retrieval`.
 
+## What `$retrieve` does
+
+`$retrieve` continues a closed `2026-08-26.1` learning session without
+re-teaching it. It scans eligible `awaiting-retrieval` notes, excludes
+synthetic harnesses and disabled sessions, and deterministically selects the
+oldest overdue due note. It reveals exactly one current, answer-hidden prompt
+in the CLI. Before grading, the teacher rereads that note's source pack,
+learner map, and completed lesson; after the response it gives a
+source-grounded correction and writes the raw prompt, answer, assessment,
+observed local date, and scheduling decision to the linked sidecar.
+
+State changes are performance-based: an initial pass advances to an
+interleaved/discriminating prompt due five calendar days after the observed
+assessment date; a partial response retries the same stage in two days; a miss
+retries it in one; an ungradable response does not advance. An interleaved
+pass completes the session only after the validator can verify two committed
+passes in order, both strictly after `retrieval-started`. The +2-day initial
+schedule and these later intervals are product defaults, not universal optimum
+claims. [[Learning Research Sources]] records the supporting retrieval,
+spacing, corrective-feedback, and qualified-interleaving evidence.
+
 The dependency plan always has a Mermaid visual. During graph, state-machine,
 flow, geometry, or trace-heavy teaching, `$learning-visuals` is default-on for
 every node and for reteaching a structural misconception. An answer-hidden

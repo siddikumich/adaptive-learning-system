@@ -4,12 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 
-PROTOCOL_VERSION = "2026-08-25.6"
+PROTOCOL_VERSION = "2026-08-26.1"
+RETRIEVAL_SCHEMA = "1"
+RETRIEVAL_TIMEZONE = "America/Detroit"
+RETRIEVAL_STAGES = {"initial", "interleaved", "complete"}
 REQUIRED_SECTIONS = (
     "Goal",
     "Source pack",
@@ -80,6 +85,17 @@ def normalized(text: str) -> str:
     return " ".join(text.split())
 
 
+def valid_iso_date(value: str) -> bool:
+    """Return whether value is a real ISO calendar date."""
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def node_name(heading: str) -> str:
     name = re.sub(r"^Node\s+\d+\s+[—-]\s+", "", heading, flags=re.IGNORECASE)
     return normalized(name).casefold()
@@ -120,14 +136,15 @@ def dependency_roots(dependency_plan: str) -> tuple[set[str], dict[str, str]]:
     labels = {
         match.group(1): match.group(2)
         for match in re.finditer(
-            r'^\s*([A-Za-z][A-Za-z0-9_]*)\s*\[\s*"([^"]+)"\s*\]\s*$',
+            r'(?<![A-Za-z0-9_])([A-Za-z][A-Za-z0-9_]*)\s*'
+            r'\[\s*"?([^"\]\n]+?)"?\s*\]',
             graph,
-            re.MULTILINE,
         )
     }
     edges = re.findall(
-        r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*-->\s*(?:\|[^|]*\|\s*)?"
-        r"([A-Za-z][A-Za-z0-9_]*)\s*$",
+        r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*(?:\[[^\]\n]*\])?\s*"
+        r"-->\s*(?:\|[^|]*\|\s*)?"
+        r"([A-Za-z][A-Za-z0-9_]*)\s*(?:\[[^\]\n]*\])?\s*$",
         graph,
         re.MULTILINE,
     )
@@ -167,6 +184,120 @@ def root_audit(dependency_plan: str) -> tuple[list[dict[str, str]], str | None]:
     return rows, None
 
 
+def validate_retrieval_fields(
+    note_path: Path,
+    note_meta: dict[str, str],
+    transfer: str,
+    session_status: str,
+) -> list[str]:
+    """Validate the v1 retrieval state kept in a new-protocol session note."""
+    errors: list[str] = []
+    required = {
+        "retrieval-schema": RETRIEVAL_SCHEMA,
+        "retrieval-enabled": "true",
+        "retrieval-timezone": RETRIEVAL_TIMEZONE,
+        "retrieval-required-passes": "2",
+    }
+    for field, expected in required.items():
+        if note_meta.get(field) != expected:
+            errors.append(f"{note_path}: {field} must be {expected!r}")
+
+    started = note_meta.get("retrieval-started", "")
+    if not valid_iso_date(started):
+        errors.append(f"{note_path}: retrieval-started must be a YYYY-MM-DD calendar date")
+
+    stage = note_meta.get("retrieval-stage", "")
+    if stage not in RETRIEVAL_STAGES:
+        errors.append(f"{note_path}: retrieval-stage must be one of {sorted(RETRIEVAL_STAGES)!r}")
+    passes_text = note_meta.get("retrieval-passes", "")
+    try:
+        passes = int(passes_text)
+    except ValueError:
+        passes = -1
+    if passes not in {0, 1, 2}:
+        errors.append(f"{note_path}: retrieval-passes must be 0, 1, or 2")
+    elif (stage, passes) not in {("initial", 0), ("interleaved", 1), ("complete", 2)}:
+        errors.append(
+            f"{note_path}: retrieval-stage {stage!r} and retrieval-passes {passes} are inconsistent"
+        )
+
+    next_retrieval = note_meta.get("next-retrieval", "")
+    if session_status == "awaiting-retrieval":
+        if not valid_iso_date(next_retrieval):
+            errors.append(f"{note_path}: awaiting-retrieval requires YYYY-MM-DD next-retrieval")
+    elif session_status == "complete" and next_retrieval:
+        errors.append(f"{note_path}: complete retrieval state requires blank next-retrieval")
+
+    delayed_count = len(re.findall(r"^### Delayed retrieval\s*$", transfer, re.MULTILINE))
+    if delayed_count != 1:
+        errors.append(f"{note_path}: Transfer and retrieval requires one '### Delayed retrieval' subsection")
+        return errors
+    delayed = re.search(
+        r"^### Delayed retrieval\s*\n(.*?)(?=^### |\Z)",
+        transfer,
+        re.MULTILINE | re.DOTALL,
+    )
+    assert delayed is not None
+    delayed_text = delayed.group(1)
+    for label in ("Completion criterion", "Current stage", "Next retrieval"):
+        match = re.search(rf"^- {re.escape(label)}:[ \t]*(.*)$", delayed_text, re.MULTILINE)
+        if not match or (label != "Next retrieval" and not match.group(1).strip()):
+            errors.append(f"{note_path}: delayed retrieval requires '{label}:'")
+            continue
+        value = match.group(1).strip()
+        if label == "Current stage" and value != stage:
+            errors.append(f"{note_path}: delayed retrieval Current stage must match retrieval-stage")
+        if label == "Next retrieval":
+            if value != next_retrieval:
+                errors.append(f"{note_path}: delayed retrieval Next retrieval must match next-retrieval")
+
+    for heading in ("Initial retrieval prompt", "Interleaved retrieval prompt"):
+        count = len(re.findall(rf"^#### {re.escape(heading)}\s*$", delayed_text, re.MULTILINE))
+        if count != 1:
+            errors.append(f"{note_path}: delayed retrieval requires one '#### {heading}'")
+            continue
+        prompt = re.search(
+            rf"^#### {re.escape(heading)}\s*\n+(.*?)(?=^#### |^### |\Z)",
+            delayed_text,
+            re.MULTILINE | re.DOTALL,
+        )
+        assert prompt is not None
+        prompt_text = prompt.group(1).strip()
+        if not prompt_text or normalized(prompt_text).casefold() in {"pending", "tbd"}:
+            errors.append(f"{note_path}: {heading} must contain an authored answer-hidden prompt")
+    return errors
+
+
+def validate_retrieval_completion(note_path: Path, log_path: Path) -> list[str]:
+    """Ask the retrieve helper to verify ordered, committed delayed-pass evidence.
+
+    Keep this dynamic to avoid a circular import and to leave the teaching
+    validator usable before the retrieve engine is installed.
+    """
+    helper_path = Path(__file__).resolve().parents[2] / "retrieve" / "scripts" / "retrieval_state.py"
+    if not helper_path.is_file():
+        return [
+            f"{note_path}: complete closeout requires retrieve helper "
+            f"{helper_path} with validate_retrieval_completion(note_path, log_path)"
+        ]
+    try:
+        spec = importlib.util.spec_from_file_location("teach_retrieval_state", helper_path)
+        if spec is None or spec.loader is None:
+            raise ImportError("could not create module spec")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        helper = getattr(module, "validate_retrieval_completion")
+        result = helper(note_path, log_path)
+    except Exception as error:  # pragma: no cover - the helper owns its details.
+        return [f"{note_path}: could not run retrieve completion helper: {error}"]
+    if not isinstance(result, list) or not all(isinstance(item, str) for item in result):
+        return [
+            f"{note_path}: retrieve completion helper must return list[str], got {type(result).__name__}"
+        ]
+    return result
+
+
 def validate_closeout(
     note_path: Path,
     log_path: Path,
@@ -184,21 +315,36 @@ def validate_closeout(
         errors.append(f"{log_path}: status must match closed session status {session_status!r}")
     if current_status != "demonstrated":
         errors.append(f"{note_path}: closeout requires learner-map Status `demonstrated`")
-    next_retrieval = note_meta.get("next-retrieval", "")
-    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", next_retrieval):
-        errors.append(f"{note_path}: closeout requires YYYY-MM-DD next-retrieval")
-
     transfer = section(note, "Transfer and retrieval") or ""
+    errors.extend(validate_retrieval_fields(note_path, note_meta, transfer, session_status))
+    if session_status == "complete":
+        errors.extend(validate_retrieval_completion(note_path, log_path))
+
+    novel_application = re.search(r"^- Novel application:\s*(.+)$", transfer, re.MULTILINE)
+    if not novel_application or normalized(novel_application.group(1)).casefold().startswith("pending"):
+        errors.append(f"{note_path}: closeout requires a non-pending novel application")
     result = re.search(r"^- Result and verification:\s*(.+)$", transfer, re.MULTILINE)
     if not result or normalized(result.group(1)).casefold().startswith("pending"):
         errors.append(f"{note_path}: closeout requires a non-pending transfer result")
-    for label in ("Retrieve on", "Interleave/discriminate on"):
-        match = re.search(rf"^- {re.escape(label)}:\s*(.+)$", transfer, re.MULTILINE)
-        if not match or not match.group(1).strip():
-            errors.append(f"{note_path}: closeout requires '{label}'")
+    evidence_boundaries = list(
+        re.finditer(r"^### Evidence boundary\s*$", transfer, re.MULTILINE)
+    )
+    if len(evidence_boundaries) != 1:
+        errors.append(
+            f"{note_path}: closeout requires exactly one '### Evidence boundary' after retrieval prompts"
+        )
+        evidence_text = ""
+    else:
+        boundary = evidence_boundaries[0]
+        final_prompt = transfer.find("#### Interleaved retrieval prompt")
+        if final_prompt < 0 or boundary.start() < final_prompt:
+            errors.append(
+                f"{note_path}: Evidence boundary must follow both retrieval prompts"
+            )
+        evidence_text = transfer[boundary.end() :]
     for label in ("Known", "Inference", "Unknown", "To verify", "Smallest next action"):
-        if not re.search(rf"^{re.escape(label)}:\s*.+$", transfer, re.MULTILINE):
-            errors.append(f"{note_path}: closeout requires '{label}:'")
+        if not re.search(rf"^{re.escape(label)}:\s*.+$", evidence_text, re.MULTILINE):
+            errors.append(f"{note_path}: Evidence boundary requires '{label}:'")
     closeouts = list(re.finditer(r"^### .*closeout.*$", log, re.MULTILINE | re.IGNORECASE))
     if not closeouts:
         errors.append(f"{log_path}: closeout event is missing")

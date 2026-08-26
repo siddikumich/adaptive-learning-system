@@ -1,0 +1,16 @@
+/* Keep rendered Mermaid diagrams inside the current Obsidian note pane. */
+.markdown-rendered .mermaid,
+.markdown-source-view.mod-cm6 .mermaid {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden !important;
+}
+
+.markdown-rendered .mermaid svg,
+.markdown-source-view.mod-cm6 .mermaid svg {
+  display: block;
+  width: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin-inline: auto;
+}

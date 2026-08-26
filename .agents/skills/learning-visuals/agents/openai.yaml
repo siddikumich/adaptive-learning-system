@@ -1,0 +1,6 @@
+interface:
+  display_name: "Learning Visuals"
+  short_description: "Clear Mermaid and SVG lesson visuals"
+  default_prompt: "Use $learning-visuals to create the smallest useful visual for this learning concept in my Obsidian note."
+policy:
+  allow_implicit_invocation: true

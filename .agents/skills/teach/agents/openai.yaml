@@ -1,0 +1,6 @@
+interface:
+  display_name: "Teach"
+  short_description: "Adaptive, source-grounded learning sessions"
+  default_prompt: "Use $teach to help me learn a difficult subject through adaptive probing, a Mermaid dependency plan, and one-node-at-a-time teaching."
+policy:
+  allow_implicit_invocation: true

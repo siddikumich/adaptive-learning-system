@@ -1,0 +1,17 @@
+.agents/skills/teach/SKILL.md
+.agents/skills/teach/agents/openai.yaml
+.agents/skills/teach/scripts/validate_session.py
+.agents/skills/learning-visuals/SKILL.md
+.agents/skills/learning-visuals/agents/openai.yaml
+.codex/agents/learning-researcher.toml
+.codex/agents/learning-verifier.toml
+.codex/agents/learning-visualizer.toml
+.obsidian/snippets/learning-mermaid-responsive.css
+Templates/Learning Session Template.md
+Templates/Learning Session Log Template.md
+AI Learning System — Portable Specification.md
+AI Learning Contract.md
+Codex Learning System.md
+Learning System.md
+Learning Research Sources.md
+Vault Source Integrity Protocol.md

@@ -24,7 +24,7 @@ class RetrievalStateTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def make_session(self, name: str = "Session", *, start: str = "2026-01-01", due: str | None = None, stage: str = "initial", passes: int = 0, status: str = "awaiting-retrieval", timezone: str = "America/Detroit", synthetic: bool = False, enabled: str = "true") -> tuple[Path, Path]:
+    def make_session(self, name: str = "Session", *, start: str = "2026-01-01", due: str | None = None, stage: str = "initial", passes: int = 0, status: str = "awaiting-retrieval", timezone: str = "America/Detroit", synthetic: bool = False, enabled: str = "true", protocol: str = "2026-08-26.1") -> tuple[Path, Path]:
         due = due if due is not None else (date.fromisoformat(start) + timedelta(days=2)).isoformat()
         if stage == "complete":
             due = ""
@@ -36,7 +36,7 @@ class RetrievalStateTests(unittest.TestCase):
         note.write_text(f'''---
 type: learning-session
 status: {status}
-protocol-version: "2026-08-25.6"
+protocol-version: "{protocol}"
 source-note: "[[Source]]"
 session-log: "[[{name} Log]]"
 interaction-mode: {mode}
@@ -98,6 +98,33 @@ session-note: "[[{name}]]"
 ''', encoding="utf-8")
         return note, log
 
+    def make_legacy_session(self, name: str = "Legacy") -> tuple[Path, Path]:
+        """Build an explicitly legacy-only fixture; ordinary tests use current protocol."""
+        note, log = self.make_session(name, protocol="2026-08-25.6")
+        legacy = note.read_text(encoding="utf-8")
+        legacy = re_sub_many(legacy, [
+            (r'retrieval-schema: "1"\n', ""),
+            (r"retrieval-enabled: true\n", ""),
+            (r"retrieval-timezone: America/Detroit\n", ""),
+            (r"retrieval-started: 2026-01-01\n", ""),
+            (r"retrieval-stage: initial\n", ""),
+            (r"retrieval-required-passes: 2\n", ""),
+            (r"retrieval-passes: 0\n", ""),
+            (r'next-retrieval: "2026-01-03"\n', ""),
+        ])
+        legacy = legacy.replace(
+            "### Delayed retrieval",
+            "- Retrieve on: 2026-01-03 — first generic prompt\n"
+            "- Interleave/discriminate on: 2026-01-08 — second generic prompt\n\n"
+            "### Legacy retrieval",
+        )
+        note.write_text(legacy, encoding="utf-8")
+        log.write_text(
+            log.read_text(encoding="utf-8") + "\n## 2026-01-01 closeout\n",
+            encoding="utf-8",
+        )
+        return note, log
+
     def command(self, *arguments: str, success: bool = True) -> subprocess.CompletedProcess[str]:
         run = subprocess.run([sys.executable, str(SCRIPT), *arguments], text=True, capture_output=True)
         if success:
@@ -121,7 +148,7 @@ session-note: "[[{name}]]"
         return state.parse_frontmatter(note.read_text(encoding="utf-8"), note)[0]
 
     def test_discovery_due_future_and_order(self) -> None:
-        self.make_session("Zeta", due="2026-01-05")
+        self.make_session("Zeta", start="2026-01-03", due="2026-01-05")
         self.make_session("Alpha", due="2026-01-03")
         self.make_session("Beta", due="2026-01-03")
         found = state.discovery(self.root, "2026-01-03T08:00:00-05:00")
@@ -194,7 +221,7 @@ session-note: "[[{name}]]"
         self.assertIn("different answer", conflict.stderr)
 
     def test_future_prepare_is_blocked_and_frontmatter_is_preserved(self) -> None:
-        note, _ = self.make_session(due="2026-01-05")
+        note, _ = self.make_session(start="2026-01-03", due="2026-01-05")
         text = note.read_text(encoding="utf-8").replace(
             "---\n\n# Session", "tags:\n  - learnings\n---\n\n# Session"
         )
@@ -262,19 +289,28 @@ session-note: "[[{name}]]"
         self.assertIn("source-note", invalid[bad_source.name])
         self.assertIn("session-log", invalid[bad_link.name])
 
+    def test_initial_due_must_be_started_plus_two_calendar_days(self) -> None:
+        note, _ = self.make_session("WrongDue", due="2026-01-04")
+        result = self.command(
+            "validate", str(note), str(self.root / "WrongDue Log.md"), success=False
+        )
+        self.assertIn(
+            "initial next-retrieval must equal retrieval-started + 2 calendar days",
+            result.stderr,
+        )
+
     def test_legacy_success_and_repair_required_failure(self) -> None:
-        note, log = self.make_session("Legacy")
-        legacy = note.read_text(encoding="utf-8")
-        legacy = re_sub_many(legacy, [(r"retrieval-schema: \"1\"\n", ""), (r"retrieval-enabled: true\n", ""), (r"retrieval-timezone: America/Detroit\n", ""), (r"retrieval-started: 2026-01-01\n", ""), (r"retrieval-stage: initial\n", ""), (r"retrieval-required-passes: 2\n", ""), (r"retrieval-passes: 0\n", ""), (r"next-retrieval: \"2026-01-03\"\n", "")])
-        legacy = legacy.replace("### Delayed retrieval", "- Retrieve on: 2026-01-03 — first generic prompt\n- Interleave/discriminate on: 2026-01-08 — second generic prompt\n\n### Legacy retrieval")
-        note.write_text(legacy, encoding="utf-8")
-        log.write_text(log.read_text(encoding="utf-8") + "\n## 2026-01-01 closeout\n", encoding="utf-8")
+        note, log = self.make_legacy_session()
         found = state.discovery(self.root, "2026-01-03T09:00:00-05:00")
         self.assertTrue(any(item["path"] == note.name and "migratable" in item["reason"] for item in found["blocked"]))
         self.prepare(note)
         self.assertEqual(self.metadata(note)["retrieval-started"], "2026-01-01")
-        no_date, _ = self.make_session("NoDate")
-        text = no_date.read_text(encoding="utf-8").replace("retrieval-schema: \"1\"\n", "").replace("### Delayed retrieval", "- Retrieve on: 2026-01-03 — first\n- Interleave/discriminate on: 2026-01-08 — second\n\n### Legacy")
+        no_date, no_date_log = self.make_legacy_session("NoDate")
+        no_date_log.write_text(
+            no_date_log.read_text(encoding="utf-8").replace("\n## 2026-01-01 closeout\n", "\n"),
+            encoding="utf-8",
+        )
+        text = no_date.read_text(encoding="utf-8")
         no_date.write_text(text, encoding="utf-8")
         found = state.discovery(self.root, "2026-01-03T09:00:00-05:00")
         self.assertTrue(any(item["path"] == no_date.name and "repair" in item["reason"] for item in found["blocked"]))

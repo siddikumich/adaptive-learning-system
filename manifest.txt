@@ -1,8 +1,31 @@
 .agents/skills/teach/SKILL.md
 .agents/skills/teach/agents/openai.yaml
+.agents/skills/teach/scripts/session_factory.py
 .agents/skills/teach/scripts/validate_session.py
+.agents/skills/teach/tests/session_fixtures.py
+.agents/skills/teach/tests/test_current_protocol_lifecycle.py
+.agents/skills/teach/tests/test_policy_contract.py
+.agents/skills/teach/tests/test_session_factory.py
+.agents/skills/teach/tests/test_validate_session.py
 .agents/skills/learning-visuals/SKILL.md
 .agents/skills/learning-visuals/agents/openai.yaml
+.agents/skills/learning-visuals/.gitignore
+.agents/skills/learning-visuals/.puppeteerrc.cjs
+.agents/skills/learning-visuals/fixtures/dependency-map.mmd
+.agents/skills/learning-visuals/fixtures/vector-balance.svg
+.agents/skills/learning-visuals/package-lock.json
+.agents/skills/learning-visuals/package.json
+.agents/skills/learning-visuals/scripts/visual_pipeline.mjs
+.agents/skills/learning-visuals/tests/pipeline.test.mjs
+.agents/skills/learning-visuals/tests/test_cli_contract.py
+.agents/skills/learning-visuals/tests/validation.test.mjs
+.agents/learning-quiz/.gitignore
+.agents/learning-quiz/package-lock.json
+.agents/learning-quiz/package.json
+.agents/learning-quiz/src/quiz-store.js
+.agents/learning-quiz/src/server.js
+.agents/learning-quiz/tests/mcp-e2e.test.js
+.agents/learning-quiz/tests/quiz-store.test.js
 .agents/skills/retrieve/SKILL.md
 .agents/skills/retrieve/agents/openai.yaml
 .agents/skills/retrieve/references/assessment.md
@@ -19,5 +42,6 @@ AI Learning System — Portable Specification.md
 AI Learning Contract.md
 Codex Learning System.md
 Learning System.md
+Learning System Gap Closure — 2026-08-30.md
 Learning Research Sources.md
 Vault Source Integrity Protocol.md

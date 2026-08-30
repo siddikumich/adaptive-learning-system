@@ -1,7 +1,7 @@
 ---
 type: guide
 status: active
-updated: 2026-08-26
+updated: 2026-08-30
 ---
 
 # AI learning contract
@@ -41,6 +41,10 @@ diagnostic quiz is a fast way to select the next task, not proof of mastery.
 Important nodes still require free explanation, construction, tracing,
 derivation, implementation, or transfer, followed by verification against an
 original artifact.
+For keyed single-select items, the local quiz boundary keeps the answer and
+feedback outside the teacher context until the response is submitted. If that
+boundary is unavailable, the teacher must say so and prefer a constructed
+response rather than imply that instructions alone hide the key.
 
 ## Good uses
 
@@ -81,5 +85,6 @@ keeps your understanding and provenance clear.
 - [[Learning Research Sources]]
 - [[Vault Source Integrity Protocol]]
 - [[Codex Learning System]]
+- [[Learning System Gap Closure — 2026-08-30]]
 - [[Learning Session Template]]
 - [[AGENTS]]

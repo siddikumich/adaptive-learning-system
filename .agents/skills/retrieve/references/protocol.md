@@ -36,4 +36,6 @@ lesson, learner map, or semantic evidence-boundary claims.
 
 Legacy `2026-08-25.6` notes may be migrated when the linked sidecar contains a
 dated closeout heading. The helper never guesses `retrieval-started`; without
-that evidence it reports a repair requirement.
+that evidence it reports a repair requirement. Migration derives the initial
+schema-1 due date from that evidenced closeout date rather than preserving an
+arbitrary legacy date.

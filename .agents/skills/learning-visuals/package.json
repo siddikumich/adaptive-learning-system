@@ -1,0 +1,20 @@
+{
+  "name": "farhan-learning-visuals-pipeline",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "test:python": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "visual": "node scripts/visual_pipeline.mjs"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "11.16.0",
+    "@puppeteer/browsers": "3.2.1",
+    "@resvg/resvg-js": "2.6.2",
+    "puppeteer": "25.9.0"
+  }
+}

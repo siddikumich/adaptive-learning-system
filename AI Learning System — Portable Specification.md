@@ -1,9 +1,9 @@
 ---
 type: specification
 status: active
-version: 1.6
+version: 1.7
 protocol-version: "2026-08-26.1"
-updated: 2026-08-26
+updated: 2026-08-30
 tags:
   - learnings
   - systems
@@ -158,6 +158,10 @@ be emitted as part of a learner-facing prompt.
 - Record diagnostic questions in the sidecar before presenting them. Record a
   complete Phase 3 teaching unit in the learner-facing note before presenting
   its explanation and active check.
+- When an answer-isolation tool is available, have an independent verifier
+  register each keyed single-select item and return only an opaque ID. The
+  teacher presents only shuffled display tokens/labels plus `I don't know` and
+  must not receive the key, stable values, or explanation before submission.
 - After the learner replies, record the response and assessment without
   rewriting learner-authored content; raw responses belong in the sidecar.
 - Use `$...$` for inline mathematics and `$$` on separate lines for display
@@ -248,7 +252,8 @@ unknowns and split the goal or diagnose remaining dependencies just in time.
 
 Use a hybrid diagnostic funnel:
 
-1. Begin each strand with one broad, single-select multiple-choice item. Use
+1. Begin each strand with one broad, answer-isolated single-select
+   multiple-choice item. Use
    parallel bare answer claims, plausible diagnostic distractors, varied answer
    position, and an `I don't know` option; require one letter only.
 2. Adapt difficulty with single-select items until the likely boundary is
@@ -426,6 +431,10 @@ in [[Learning Research Sources]].
   the better representation.
 - Verify arrow direction, labels, scale, states, clipping, and domain
   semantics. A correct render does not prove the represented claim.
+- Stage the exact editable source, render a preview PNG locally, inspect that
+  preview, publish only the receipt-approved bytes, inspect the final PNG, then
+  embed the PNG and link its editable source. Any missing render or inspection
+  fails closed: do not publish or claim visual verification.
 - SVG must contain no scripts, event handlers, `foreignObject`, external
   references, embedded data URLs, doctypes, or entities.
 
@@ -436,8 +445,9 @@ in [[Learning Research Sources]].
 | Persistent file access | Update the Obsidian note directly | Return a complete Markdown patch and state that persistence requires the learner |
 | Parallel agents | Separate researcher and verifier contexts | Run sequential fresh-context passes; label independence as weaker |
 | Web or source retrieval | Inspect direct authoritative artifacts | Use supplied local artifacts; mark unsupported claims `Unknown` |
-| Mermaid rendering | Store editable Mermaid and inspect the render | Store Mermaid source and ask the learner to report renderer errors |
-| SVG preview | Render and visually inspect before embedding | Provide safe SVG source and label visual inspection incomplete |
+| Answer-hidden single select | Independent registration; teacher receives only opaque ID and sanitized display payload until submission | Use an atomic constructed response and label key isolation unavailable |
+| Mermaid rendering | Stage, render, inspect, receipt-publish, inspect final, retain editable source | Keep source unpublished and label visual inspection incomplete |
+| SVG preview | Stage, render, inspect, receipt-publish, inspect final, retain editable source | Keep source unpublished and label visual inspection incomplete |
 | Delayed scheduling | Schedule retrieval if authorized | Write exact prompts and dates in the note |
 
 Never claim a source, write, render, verification, independent audit, or test
@@ -533,9 +543,12 @@ topic:
 
 ## Current Codex adapter
 
-As of 2026-08-26, the local implementation maps this specification to:
+As of 2026-08-30, the local implementation maps this specification to:
 
 - `.agents/skills/teach/SKILL.md` — teacher/orchestrator protocol;
+- `.agents/skills/teach/scripts/session_factory.py` — reciprocal current-protocol
+  session-note/sidecar creation;
+- `.agents/learning-quiz/` — local answer-hidden quiz boundary;
 - `.agents/skills/learning-visuals/SKILL.md` — visual contract;
 - `.codex/agents/learning-researcher.toml` — Terra Medium researcher;
 - `.codex/agents/learning-verifier.toml` — Terra High verifier;
@@ -546,6 +559,9 @@ As of 2026-08-26, the local implementation maps this specification to:
   backlink, protocol-version, status, active-check synchronization, and
   same-day closeout checks; it delegates completed delayed-retrieval evidence
   checks to the retrieve helper when available.
+- `.agents/skills/teach/tests/` and `.agents/skills/retrieve/tests/` — opt-in,
+  zero-model-cost protocol, policy, lifecycle, and transactional regression
+  coverage.
 
 These paths are implementation details. [[Codex Learning System]] explains how
 to invoke the current Sol High teacher and the role-specific model adapter.
@@ -555,6 +571,7 @@ to invoke the current Sol High teacher and the role-specific model adapter.
 - [[Learning System]]
 - [[AI Learning Contract]]
 - [[Codex Learning System]]
+- [[Learning System Gap Closure — 2026-08-30]]
 - [[Learning Research Sources]]
 - [[Learning Session Template]]
 - [[Learning Session Log Template]]

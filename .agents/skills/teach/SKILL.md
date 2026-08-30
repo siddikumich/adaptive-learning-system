@@ -1,6 +1,6 @@
 ---
 name: teach
-description: Run an adaptive, source-grounded learning session in the Obsidian vault when Farhan wants to understand, practice, or apply a difficult subject. Map the relevant knowledge boundary, build a Mermaid dependency plan, teach one node at a time, and require transfer plus delayed retrieval.
+description: Run the explicit `$teach` adaptive, source-grounded learning-session protocol in the Obsidian vault. Use only when Farhan invokes `$teach`; ordinary requests for explanations, advice, research, planning, or practical artifacts must not activate this workflow.
 ---
 
 # Teach through productive struggle
@@ -14,6 +14,20 @@ Current protocol version: `2026-08-26.1`.
 Read `Learning System.md` and `AI Learning Contract.md` before a substantial
 session. Preserve course policies and source constraints supplied by Farhan.
 
+## Activation boundary
+
+Run this workflow only when Farhan explicitly invokes `$teach`. Do not infer
+consent from a desire to learn, a knowledge gap, a difficult subject, or a
+request that mixes explanation with a practical deliverable. Handle those
+requests directly with the smallest useful artifact or answer unless Farhan
+separately invokes `$teach`.
+
+Once invoked, the approved learning scope is enough authority to advance
+through its diagnostic. Do not ask for permission between already scoped
+probes or use a separate turn merely to say that more questions remain. If
+Farhan pauses, redirects, or withdraws `$teach`, stop the protocol and preserve
+the current evidence state without continuing automatically.
+
 ## Invariants
 
 - Maximize subject-matter struggle: prediction, retrieval, construction,
@@ -25,6 +39,11 @@ session. Preserve course policies and source constraints supplied by Farhan.
   multiple dependency nodes.
 - During diagnosis, require one atomic, scorable response per turn. Do not
   bundle several outputs into one prompt merely to collect more evidence.
+- Keep initiative within that one-request limit. After assessing a diagnostic
+  response, present the next necessary atomic probe in the same reply. If
+  Farhan asks for diagnostic status, answer briefly and include the next probe
+  unless he asked to pause or redirect. Never require a redundant `continue`,
+  `ready`, or `go ahead` turn.
 - Treat multiple choice as efficient recognition evidence, not mastery.
 - Advance only from observable evidence, never from “I get it” or confidence.
 - Keep facts, inferences, and unknowns distinct. Cite primary or authoritative
@@ -71,7 +90,16 @@ Keep two linked Markdown artifacts beside each other:
 
 When creating a new session, initialize both artifacts from
 `Templates/Learning Session Template.md` and
-`Templates/Learning Session Log Template.md`. When resuming a legacy session
+`Templates/Learning Session Log Template.md`. Prefer the deterministic factory
+so reciprocal links, dates, and the current protocol cannot drift:
+
+```bash
+python3 .agents/skills/teach/scripts/session_factory.py "<session title>" \
+  --output-dir "<note directory>" --created "<YYYY-MM-DD>" \
+  --source-note "<existing source note when known>"
+```
+
+When resuming a legacy session
 whose main note contains `## Session log`, move that section losslessly into
 the linked sidecar before continuing; do not summarize away learner-authored
 responses. New sessions record protocol `2026-08-26.1` in both artifacts. Do
@@ -79,12 +107,46 @@ not silently rewrite a real or synthetic `2026-08-25.6` session or sidecar to
 the new retrieval schema; `$retrieve` owns compatible legacy handling.
 
 Write each diagnostic question into the sidecar before presenting it in chat.
+For a quiz-tool item, `present_quiz` performs this write; do not manually add a
+second copy.
 After Farhan replies, record the response there verbatim. Record the assessment
 immediately unless feedback must remain deferred; in that case write
 `assessment deferred` and update it when the diagnostic bracket closes. At
 phase boundaries, update the structured sections of the session note instead
 of treating the sidecar as the learner model. Preserve all learner-authored
 content.
+
+Keep pending answer keys and assessor notes teacher-facing. Never disclose
+them in commentary, progress updates, learner-facing recaps, or the prompt
+itself. Operational updates should not interrupt the diagnostic loop; batch
+reviewable vault commits at phase boundaries unless an error or pause makes an
+earlier checkpoint useful.
+
+### Answer-hidden single-select boundary
+
+When the local `register_quiz`, `present_quiz`, and `submit_quiz` tools are
+available, use them for every keyed single-select diagnostic item:
+
+1. Give `learning_verifier` the construct, inspected sources, question,
+   stable option values and labels, proposed key, explanation, and
+   vault-relative session-log path. The verifier audits the item, calls
+   `register_quiz`, and returns only its opaque `quiz_id`; it must not return
+   the key or explanation.
+2. In the parent, call `present_quiz` with that `quiz_id`. Present its sanitized
+   `prompt`, displayed token/label options (including `0. I don't know`), and
+   `response_instruction` exactly, with no teaching prose, answer hint, stable
+   values, key, or explanation. Do not reconstruct or reshuffle the payload.
+3. After Farhan replies with one displayed token, call `submit_quiz` with the
+   same `quiz_id` and `response_token`. Only then may correctness, the expected
+   answer, or the registered explanation enter parent context or the sidecar.
+   Preserve contamination and deferred-feedback rules for any later probe.
+
+Do not call `register_quiz` in the learner-facing parent when an independent
+verifier can do so: tool-output isolation is the point of this boundary. If
+the tools or verifier registration are unavailable, do not claim answer-key
+isolation. Prefer an atomic constructed response; if a keyed item is genuinely
+necessary, label isolation incomplete in the sidecar and keep the key out of
+learner-facing text by best effort.
 
 ## Interface contract
 
@@ -119,6 +181,15 @@ those as raw text. LaTeX environments such as `\begin{cases}` belong inside a
 `$$` block. Treat equations as lesson content, not as Mermaid or SVG visuals.
 
 ## Phase 1 — Source and probe
+
+Before learner-facing orientation, draft the candidate probe map and audit the
+existing conversation for answer contamination. Orientation may explain the
+goal, privacy boundary, process, and approximate probe budget, but it must not
+teach or strongly cue a claim that a planned diagnostic is supposed to
+measure. If the conversation has already disclosed such a claim, do not use a
+recognition item for prior-knowledge evidence; use a fresh non-isomorphic
+production task when that boundary still matters, or label the evidence
+`post-instruction`.
 
 For anything beyond a trivial or fully supplied local artifact, delegate two
 bounded read-only tasks in parallel:
@@ -164,10 +235,11 @@ dependency just in time rather than extending the pretest automatically.
 
 Use this diagnostic funnel:
 
-1. Start each strand with one broad, single-select multiple-choice item. Use
-   parallel bare answer claims, diagnostic distractors, varied key position,
+1. Start each strand with one broad, answer-isolated single-select
+   multiple-choice item through the quiz-tool boundary above. Use parallel
+   bare answer claims, diagnostic distractors, varied key position,
    `I don't know`, and LaTeX where notation benefits from it. Ask for one
-   letter only.
+   displayed token only.
 2. Adapt with harder or easier single-select items until the likely boundary
    is narrow. Trace, code, and application scenarios may be multiple choice;
    present complete candidate outcomes rather than asking for several fields.
@@ -195,6 +267,10 @@ diagnostic snapshot, not the final Phase 4 transfer proof.
 Defer corrective feedback while any coupled strand remains under diagnosis.
 If feedback is revealed early, label later evidence `post-instruction` and use
 a non-isomorphic item before treating it as diagnostic evidence.
+If a learner-facing recap, progress update, example, or prior explanation
+reveals a pending item's answer, invalidate the item immediately. Record the
+contamination, do not score it, and replace it only when the result could still
+change the first teaching node.
 
 Maintain the note's learner map with:
 
@@ -381,6 +457,28 @@ attempt. Other subjects still use visuals only when they reduce working-memory
 load. Give `learning_visualizer` a bounded, verified brief; keep domain
 reasoning with the teacher and verifier.
 
+Every visual used for instruction or planning must pass the local staged
+render-and-inspect boundary from `$learning-visuals`. After the visualizer
+returns editable `.mmd` or `.svg` source, the parent must:
+
+1. stage it with
+   `node .agents/skills/learning-visuals/scripts/visual_pipeline.mjs stage`
+   using `--kind`, absolute `--source`, a filename-safe `--name`, and
+   `--workspace /absolute/path/to/vault`;
+2. inspect the returned `previewPath` with `view_image` and revise/re-stage if
+   parsing, geometry, labels, direction, clipping, contrast, or legibility is
+   wrong;
+3. publish only the inspected bytes with the returned `receiptPath` and
+   `previewSha256` via `publish --receipt ... --approved-preview-sha256 ...
+   --workspace /absolute/path/to/vault`;
+4. inspect the returned final `pngPath` with `view_image`, then embed that PNG
+   in the lesson and link the published editable source beside it.
+
+Fail closed: when staging, either `view_image` inspection, receipt approval, or
+publication is unavailable or fails, do not publish or describe the visual as
+verified. Keep the lesson moving with prose, code, a table, or an equation when
+possible, and record visual inspection incomplete in the sidecar.
+
 Before every teaching/check reply, run the session validator with
 `--require-active-check`. Copy the text between its `ACTIVE_CHECK_BEGIN` and
 `ACTIVE_CHECK_END` markers verbatim into the CLI; do not retype it. Run the
@@ -396,6 +494,7 @@ After the sink node:
 
 - require a novel application without step-by-step scaffolding;
 - verify it using a primary artifact, test, derivation, or counterexample;
+- set `source-note` to an existing, resolvable Markdown source/topic note;
 - ask for a compressed explanation connecting the roots to the goal;
 - author both exact, answer-hidden production prompts under the canonical
   `## Transfer and retrieval` → `### Delayed retrieval` subsection: one

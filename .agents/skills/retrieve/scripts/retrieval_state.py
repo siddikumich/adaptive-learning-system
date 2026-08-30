@@ -322,11 +322,13 @@ def canonical_errors(session: Session, require_prompts: bool = True) -> list[str
         errors.append("retrieval-passes must be 0, 1, or 2")
     if not m.get("retrieval-started"):
         errors.append("retrieval-started is required")
+        started = None
     else:
         try:
-            as_date(m["retrieval-started"], "retrieval-started")
+            started = as_date(m["retrieval-started"], "retrieval-started")
         except RetrievalError as error:
             errors.append(str(error))
+            started = None
     stage = m.get("retrieval-stage", "")
     status = m.get("status", "")
     log_meta, _, _ = parse_frontmatter(session.log, session.log_path)
@@ -339,7 +341,18 @@ def canonical_errors(session: Session, require_prompts: bool = True) -> list[str
         if status != "awaiting-retrieval":
             errors.append("incomplete retrieval requires status awaiting-retrieval")
         try:
-            as_date(m.get("next-retrieval", ""), "next-retrieval")
+            next_due = as_date(m.get("next-retrieval", ""), "next-retrieval")
+            if (
+                stage == "initial"
+                and m.get("retrieval-passes") == "0"
+                and started
+                and not events(session.log)
+            ):
+                expected = started + timedelta(days=2)
+                if next_due != expected:
+                    errors.append(
+                        "initial next-retrieval must equal retrieval-started + 2 calendar days"
+                    )
         except RetrievalError as error:
             errors.append(str(error))
     if require_prompts:
@@ -446,13 +459,9 @@ def migrate(session: Session) -> Session:
     started = closeout_date(session.log)
     if not started:
         raise RetrievalError("legacy session needs repair: sidecar has no dated closeout to evidence retrieval-started")
-    try:
-        next_due = as_date(
-            session.meta.get("next-retrieval", ""),
-            "legacy next-retrieval",
-        ).isoformat()
-    except RetrievalError:
-        next_due = as_date(prompts[0], "legacy Retrieve on date").isoformat()
+    # Schema 1 has one canonical initial interval. Preserve the legacy prompt,
+    # but derive operational state from the evidenced closeout date.
+    next_due = (started + timedelta(days=2)).isoformat()
     changed = update_main_note(
         session.note,
         {

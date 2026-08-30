@@ -1,7 +1,7 @@
 ---
 type: reference
 status: active
-updated: 2026-08-26
+updated: 2026-08-30
 ---
 
 # Codex learning system
@@ -46,6 +46,8 @@ flowchart LR
   F[Farhan<br/>attempt and judgment] <--> T[Codex teacher<br/>probe, plan, teach]
   T --> R[Researcher<br/>source map]
   T --> V[Verifier<br/>independent audit]
+  V --> Q[Quiz boundary<br/>key isolation]
+  Q --> T
   R --> S[Primary artifacts]
   V --> S
   T --> G[Visualizer<br/>Mermaid or SVG source]
@@ -67,7 +69,10 @@ neither replaces Farhan's attempt or the primary artifact.
 3. Probes each relevant prerequisite strand through a broad multiple-choice
    screen, adaptive selected-response items, and an atomic constructed check
    at the likely boundary. A Phase 1 construction requests one discriminating
-   component, never a full multi-field contract.
+   component, never a full multi-field contract. The verifier registers keyed
+   selected-response items behind the local quiz boundary and returns only an
+   opaque ID; the teacher sees shuffled `A`–`T`/`0` display tokens and no key
+   until submission.
 4. Writes a precise learner-map table, a compact Mermaid evidence-frontier
    summary, and an editable Mermaid dependency DAG; classifies and stress-tests
    every root, then waits for approval.
@@ -104,6 +109,10 @@ flow, geometry, or trace-heavy teaching, `$learning-visuals` is default-on for
 every node and for reteaching a structural misconception. An answer-hidden
 check may show the supplied input graph but never its solution state graph or
 path.
+Each instructional Mermaid or SVG is rendered to a staged PNG, inspected with
+the image viewer, published only with a receipt approving those exact bytes,
+and inspected again at its final path. The note embeds the PNG and links the
+editable `.mmd` or `.svg`; failed or unavailable inspection blocks publication.
 
 ## Model routing
 
@@ -173,6 +182,8 @@ status.
 ## Implementation
 
 - `.agents/skills/teach/` contains the repo-scoped teaching protocol.
+- `.agents/skills/teach/scripts/session_factory.py` creates a reciprocal
+  current-protocol note and sidecar from the canonical templates.
 - `.agents/skills/teach/scripts/validate_session.py` checks the two-note
   contract and structured DAG-root audit, then emits the newest canonical
   active check—including a reteach check—for exact CLI reuse or validates a
@@ -180,7 +191,12 @@ status.
 - `.obsidian/snippets/learning-mermaid-responsive.css` keeps Mermaid SVGs
   within the current note pane in both Reading view and Live Preview.
 - `.agents/skills/learning-visuals/` contains the visual decision and creation
-  protocol.
+  protocol plus the staged render/inspect/receipt-publish pipeline.
+- `.agents/learning-quiz/` and project `.codex/config.toml` provide the local
+  answer-hidden STDIO MCP boundary.
+- `.agents/skills/teach/tests/`, `.agents/skills/retrieve/tests/`, and
+  `.agents/skills/learning-visuals/tests/` contain deterministic protocol and
+  lifecycle regression coverage.
 - `.codex/agents/learning-researcher.toml`,
   `.codex/agents/learning-verifier.toml`, and
   `.codex/agents/learning-visualizer.toml` define read-only specialist agents
@@ -198,6 +214,7 @@ after verifying that current Codex supports
 - [[Learning System]]
 - [[AI Learning Contract]]
 - [[Learning Research Sources]]
+- [[Learning System Gap Closure — 2026-08-30]]
 - [[Learning Session Template]]
 - [[Learning Session Log Template]]
 - [[CURRENT-STATE]]

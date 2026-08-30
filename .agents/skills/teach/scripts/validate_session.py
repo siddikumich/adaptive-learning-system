@@ -7,11 +7,12 @@ import argparse
 import importlib.util
 import re
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 
 PROTOCOL_VERSION = "2026-08-26.1"
+VAULT_ROOT = Path(__file__).resolve().parents[4]
 RETRIEVAL_SCHEMA = "1"
 RETRIEVAL_TIMEZONE = "America/Detroit"
 RETRIEVAL_STAGES = {"initial", "interleaved", "complete"}
@@ -94,6 +95,47 @@ def valid_iso_date(value: str) -> bool:
     except ValueError:
         return False
     return True
+
+
+def linked_markdown_path(
+    note_path: Path, value: str, vault_root: Path = VAULT_ROOT
+) -> Path | None:
+    """Resolve an unambiguous same-vault Obsidian note link."""
+    match = re.fullmatch(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", value.strip())
+    if not match:
+        return None
+    target_text = match.group(1).split("#", 1)[0].strip()
+    if not target_text:
+        return None
+    target = Path(target_text)
+    if target.suffix.lower() != ".md":
+        target = target.with_suffix(".md")
+
+    vault_root = vault_root.resolve()
+    candidates = [note_path.parent / target]
+    try:
+        note_path.resolve().relative_to(vault_root)
+    except ValueError:
+        pass
+    else:
+        candidates.append(vault_root / target)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+
+    # Obsidian also permits basename-only links to a note elsewhere in the
+    # vault. Accept that form only when it resolves uniquely; ambiguity is not
+    # enough evidence for a closeout source.
+    if target.parent == Path(".") and note_path.resolve().is_relative_to(vault_root):
+        matches = [
+            candidate
+            for candidate in vault_root.rglob(target.name)
+            if candidate.is_file()
+            and not any(part.startswith(".") for part in candidate.relative_to(vault_root).parts)
+        ]
+        if len(matches) == 1:
+            return matches[0]
+    return None
 
 
 def node_name(heading: str) -> str:
@@ -189,6 +231,7 @@ def validate_retrieval_fields(
     note_meta: dict[str, str],
     transfer: str,
     session_status: str,
+    log: str,
 ) -> list[str]:
     """Validate the v1 retrieval state kept in a new-protocol session note."""
     errors: list[str] = []
@@ -225,6 +268,18 @@ def validate_retrieval_fields(
     if session_status == "awaiting-retrieval":
         if not valid_iso_date(next_retrieval):
             errors.append(f"{note_path}: awaiting-retrieval requires YYYY-MM-DD next-retrieval")
+        elif (
+            valid_iso_date(started)
+            and stage == "initial"
+            and passes == 0
+            and "<!-- retrieval-event " not in log
+        ):
+            expected = (date.fromisoformat(started) + timedelta(days=2)).isoformat()
+            if next_retrieval != expected:
+                errors.append(
+                    f"{note_path}: initial next-retrieval must equal "
+                    f"retrieval-started + 2 calendar days ({expected})"
+                )
     elif session_status == "complete" and next_retrieval:
         errors.append(f"{note_path}: complete retrieval state requires blank next-retrieval")
 
@@ -315,8 +370,12 @@ def validate_closeout(
         errors.append(f"{log_path}: status must match closed session status {session_status!r}")
     if current_status != "demonstrated":
         errors.append(f"{note_path}: closeout requires learner-map Status `demonstrated`")
+    if not linked_markdown_path(note_path, note_meta.get("source-note", "")):
+        errors.append(f"{note_path}: closeout source-note must link to an existing Markdown note")
     transfer = section(note, "Transfer and retrieval") or ""
-    errors.extend(validate_retrieval_fields(note_path, note_meta, transfer, session_status))
+    errors.extend(
+        validate_retrieval_fields(note_path, note_meta, transfer, session_status, log)
+    )
     if session_status == "complete":
         errors.extend(validate_retrieval_completion(note_path, log_path))
 
@@ -514,7 +573,7 @@ def validate(
                         errors.append(f"{log_path}: pending assessment has no preceding Active check")
                     else:
                         logged_check = log[check_at + len("Active check:") : pending_at].strip()
-                        if normalized(logged_check) != normalized(canonical_check):
+                        if logged_check.strip() != canonical_check.strip():
                             errors.append(
                                 f"{log_path}: pending Active check differs from the canonical lesson"
                             )

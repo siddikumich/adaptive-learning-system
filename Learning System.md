@@ -1,7 +1,7 @@
 ---
 type: guide
 status: active
-updated: 2026-08-26
+updated: 2026-08-30
 ---
 
 # Learning system
@@ -66,6 +66,13 @@ application; a correct multiple-choice response is supporting evidence only.
 For state modeling, sufficiency determines correctness; eliminating redundant
 fields is a separate clarity and efficiency improvement.
 
+Keyed single-select diagnostics use a local answer-isolation boundary: the
+independent verifier registers the question, stable options, key, and feedback,
+then returns only an opaque quiz ID. The teacher can present shuffled `A`–`T`
+tokens plus `0. I don't know`; it cannot see the key or feedback until Farhan
+submits one displayed token. If that tool boundary is unavailable, the system
+uses an atomic constructed response or records that isolation was incomplete.
+
 Use Obsidian to read the canonical node lesson and dependency visuals. Use the
 Codex CLI to answer the active check, ask questions, and approve or redirect
 the path. The CLI check must match the note exactly; it should not introduce a
@@ -80,6 +87,11 @@ The reteach preserves already-correct components and isolates the remaining
 output instead of repeatedly requesting a full solution. Graph- and
 state-heavy nodes receive explanatory visuals by default, while answer-hidden
 visuals contain only the supplied input.
+Instructional Mermaid and SVG visuals are staged locally, rendered to PNG,
+inspected before publication, published by a receipt tied to the inspected
+bytes, and inspected again at the final path. The lesson embeds the verified
+PNG and retains a link to its editable source; a failed render or unavailable
+inspection blocks publication rather than producing a verification claim.
 The same preflight rejects non-Obsidian math delimiters: use `$...$` inline and
 `$$` display blocks, never `\(...\)` or `\[...\]`.
 
@@ -202,6 +214,7 @@ practice in a week is more valuable than intermittent anxiety-driven marathons.
 - [[NC150 Reactivation]]
 - [[AI Learning System — Portable Specification]]
 - [[Codex Learning System]]
+- [[Learning System Gap Closure — 2026-08-30]]
 - [[Learning Session Template]]
 - [[Fall 2026]]
 - [[CURRENT-STATE]]

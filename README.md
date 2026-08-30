@@ -18,11 +18,14 @@ Current protocol: `2026-08-26.1`.
 ## Repository layout
 
 - `.agents/skills/teach/` — adaptive teaching protocol and deterministic
-  session validator.
+  session factory, validator, and lifecycle tests.
+- `.agents/learning-quiz/` — local answer-hidden single-select STDIO MCP
+  server and leakage/path/state tests.
 - `.agents/skills/retrieve/` — due-session discovery, answer-hidden delayed
   retrieval, transactional sidecar evidence, scheduling, and completion
   validation.
-- `.agents/skills/learning-visuals/` — Obsidian-native Mermaid/SVG contract.
+- `.agents/skills/learning-visuals/` — constrained Mermaid/SVG contract plus a
+  local render, inspect, receipt-publish pipeline.
 - `.codex/agents/` — bounded researcher, verifier, and visualizer model roles.
 - `Templates/` — linked learner-facing session and teacher-facing log.
 - `.obsidian/snippets/` — responsive Mermaid styling for Obsidian.
@@ -49,6 +52,44 @@ rsync -avi --files-from=manifest.txt /absolute/path/to/vault/ ./
 
 These commands can overwrite listed files. Inspect the dry-run and repository
 diff before applying or committing.
+
+## Install local runtime dependencies
+
+The quiz server and visual renderer keep their dependencies inside their own
+ignored directories:
+
+```bash
+npm --prefix .agents/learning-quiz ci
+npm --prefix .agents/skills/learning-visuals ci
+```
+
+Configure the quiz as a project-scoped STDIO MCP server in the target vault's
+`.codex/config.toml`, replacing the absolute paths with that vault's path:
+
+```toml
+[mcp_servers.learning_quiz]
+command = "node"
+args = ["src/server.js"]
+cwd = "/absolute/path/to/vault/.agents/learning-quiz"
+startup_timeout_sec = 10
+
+[mcp_servers.learning_quiz.env]
+LEARNING_QUIZ_VAULT_ROOT = "/absolute/path/to/vault"
+LEARNING_QUIZ_STATE_ROOT = "/absolute/path/to/vault/.agents/learning-quiz/.state"
+```
+
+Restart the Codex client after changing MCP configuration, then verify the
+entry with `codex mcp list`.
+
+## Run deterministic regression tests
+
+```bash
+npm --prefix .agents/learning-quiz test
+npm --prefix .agents/skills/learning-visuals test
+npm --prefix .agents/skills/learning-visuals run test:python
+python3 -m unittest discover -s .agents/skills/teach/tests -p 'test_*.py'
+python3 -m unittest discover -s .agents/skills/retrieve/tests -p 'test_*.py'
+```
 
 ## Validate a session
 

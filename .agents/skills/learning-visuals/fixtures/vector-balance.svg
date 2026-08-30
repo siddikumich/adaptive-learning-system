@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <title>Balanced vectors</title>
+  <desc>Two opposing vectors meet at a central point.</desc>
+  <rect x="0" y="0" width="640" height="360" fill="#ffffff"/>
+  <line x1="80" y1="180" x2="300" y2="180" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
+  <polygon points="300,180 266,158 266,202" fill="#2563eb"/>
+  <line x1="560" y1="180" x2="340" y2="180" stroke="#dc2626" stroke-width="8" stroke-linecap="round"/>
+  <polygon points="340,180 374,158 374,202" fill="#dc2626"/>
+  <circle cx="320" cy="180" r="10" fill="#111827"/>
+  <text x="150" y="140" fill="#1e3a8a" font-family="Arial, sans-serif" font-size="24">Force A</text>
+  <text x="410" y="140" fill="#7f1d1d" font-family="Arial, sans-serif" font-size="24">Force B</text>
+  <text x="320" y="250" fill="#111827" font-family="Arial, sans-serif" font-size="22" text-anchor="middle">Net force = 0</text>
+</svg>

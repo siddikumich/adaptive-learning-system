@@ -51,6 +51,114 @@ test("SVG stage and publish preserve exact inspected bytes and editable source",
   }
 });
 
+test("bundled SVG font makes labels affect rendered PNG bytes", async () => {
+  const context = await workspaceWith("vector-balance.svg");
+  try {
+    const labeled = await stageVisual({ kind: "svg", name: "labeled", ...context });
+    const strippedSource = path.join(context.workspace, "vector-balance-stripped.svg");
+    const sourceText = await fs.readFile(context.source, "utf8");
+    await fs.writeFile(strippedSource, sourceText.replace(/<text\b[^>]*>.*?<\/text>/gs, ""));
+    const stripped = await stageVisual({
+      kind: "svg",
+      source: strippedSource,
+      name: "stripped",
+      workspace: context.workspace,
+      cacheDir: context.cacheDir,
+    });
+    assert.notDeepEqual(await fs.readFile(labeled.previewPath), await fs.readFile(stripped.previewPath));
+    assert.deepEqual(labeled.receipt.renderer.svgFont, {
+      family: "Noto Sans",
+      sha256: "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5",
+    });
+  } finally {
+    await cleanup(context.workspace);
+  }
+});
+
+test("workspace symlink aliases map source, cache, and receipt onto the canonical root", async (t) => {
+  const parent = await fs.mkdtemp(path.join(os.tmpdir(), "learning-visual-alias-"));
+  const workspace = path.join(parent, "workspace");
+  const alias = path.join(parent, "alias");
+  await fs.mkdir(workspace);
+  const canonicalWorkspace = await fs.realpath(workspace);
+  try {
+    await fs.symlink(workspace, alias, process.platform === "win32" ? "junction" : "dir");
+  } catch (error) {
+    await cleanup(parent);
+    if (["EPERM", "EACCES", "ENOSYS"].includes(error.code)) return t.skip("directory symlinks unavailable");
+    throw error;
+  }
+  try {
+    const source = path.join(alias, "visual.svg");
+    await fs.copyFile(path.join(FIXTURES, "vector-balance.svg"), source);
+    const staged = await stageVisual({
+      kind: "svg",
+      source,
+      name: "alias-lifecycle",
+      workspace: alias,
+      cacheDir: path.join(alias, ".cache"),
+    });
+    assert.ok(staged.receiptPath.startsWith(`${canonicalWorkspace}${path.sep}`));
+    const receiptAlias = path.join(alias, path.relative(canonicalWorkspace, staged.receiptPath));
+    const published = await publishVisual({
+      receipt: receiptAlias,
+      approvedPreviewSha256: staged.previewSha256,
+      workspace: alias,
+    });
+    assert.ok(published.pngPath.startsWith(`${canonicalWorkspace}${path.sep}`));
+  } finally {
+    await cleanup(parent);
+  }
+});
+
+test("explicit macOS /tmp lifecycle maps to /private/tmp", { skip: process.platform !== "darwin" }, async () => {
+  const lexicalWorkspace = await fs.mkdtemp("/tmp/learning-visual-tmp-alias-");
+  try {
+    const source = path.join(lexicalWorkspace, "visual.svg");
+    await fs.copyFile(path.join(FIXTURES, "vector-balance.svg"), source);
+    const staged = await stageVisual({
+      kind: "svg",
+      source,
+      name: "tmp-alias",
+      workspace: lexicalWorkspace,
+      cacheDir: path.join(lexicalWorkspace, ".cache"),
+    });
+    const published = await publishVisual({
+      receipt: staged.receiptPath.replace(/^\/private\/tmp\//, "/tmp/"),
+      approvedPreviewSha256: staged.previewSha256,
+      workspace: lexicalWorkspace,
+    });
+    assert.ok(published.pngPath.startsWith("/private/tmp/"));
+  } finally {
+    await cleanup(await fs.realpath(lexicalWorkspace));
+  }
+});
+
+test("outside caches and cache symlinks escaping the workspace remain refused", async (t) => {
+  const context = await workspaceWith("vector-balance.svg");
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), "learning-visual-outside-"));
+  try {
+    await assert.rejects(
+      stageVisual({ kind: "svg", name: "outside", ...context, cacheDir: outside }),
+      (error) => error instanceof PipelineError && error.code === "PATH_ESCAPE",
+    );
+    const cacheLink = path.join(context.workspace, "linked-cache");
+    try {
+      await fs.symlink(outside, cacheLink, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      if (["EPERM", "EACCES", "ENOSYS"].includes(error.code)) return t.skip("directory symlinks unavailable");
+      throw error;
+    }
+    await assert.rejects(
+      stageVisual({ kind: "svg", name: "linked-cache", ...context, cacheDir: cacheLink }),
+      (error) => error instanceof PipelineError && error.code === "UNSAFE_DIRECTORY",
+    );
+  } finally {
+    await cleanup(context.workspace);
+    await cleanup(outside);
+  }
+});
+
 test("publish refuses overwrite and source symlinks", async (t) => {
   const context = await workspaceWith("vector-balance.svg");
   try {

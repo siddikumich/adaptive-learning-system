@@ -25,7 +25,8 @@ Current protocol: `2026-08-26.1`.
   retrieval, transactional sidecar evidence, scheduling, and completion
   validation.
 - `.agents/skills/learning-visuals/` — constrained Mermaid/SVG contract plus a
-  local render, inspect, receipt-publish pipeline.
+  local render, inspect, receipt-publish pipeline with a pinned bundled SVG
+  font.
 - `.codex/agents/` — bounded researcher, verifier, and visualizer model roles.
 - `Templates/` — linked learner-facing session and teacher-facing log.
 - `.obsidian/snippets/` — responsive Mermaid styling for Obsidian.

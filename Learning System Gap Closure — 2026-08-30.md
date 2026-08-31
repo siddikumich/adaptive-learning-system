@@ -2,7 +2,7 @@
 type: finding
 status: active
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-08-31
 tags:
   - learnings
   - systems
@@ -29,7 +29,7 @@ The Codex adaptation was checked against the official
 | --- | --- | --- | --- |
 | Keyed quiz with stable values, shuffled display order, `I don't know`, and post-answer feedback | `extensions/quiz.ts` | `.agents/learning-quiz/` provides a local STDIO MCP lifecycle: verifier-only registration, sanitized presentation, and post-response submission. Stable values, key, and explanation are absent from the parent pre-answer payload. | Major safety gap closed for single-select diagnostics |
 | Persistent linked Markdown record | `extensions/md-log.ts` | Learning sessions already use reciprocal main-note and sidecar links. The new session factory creates the pair from current templates without overwriting existing files. | Existing capability hardened |
-| Rendered instructional visuals | Upstream lists `visual-tools` and visual-maker agents | `.agents/skills/learning-visuals/` validates constrained Mermaid/SVG, renders a local PNG, requires preview inspection, binds source to inspected bytes, publishes without clobbering, and requires final inspection. | Major render/inspection gap closed |
+| Rendered instructional visuals | Upstream lists `visual-tools` and visual-maker agents | `.agents/skills/learning-visuals/` validates constrained Mermaid/SVG, renders a local PNG with a pinned bundled font, requires preview inspection, binds source to inspected bytes, publishes without clobbering, and requires final inspection. | Major render/inspection gap closed |
 | Protocol regression coverage | No equivalent claim inferred from the upstream README | Current-protocol factory, validator, closeout, exact active-check, retrieval, and full two-pass lifecycle tests now run without model calls. | Major assurance gap closed |
 | Explicit invocation | Local requirement prompted by an observed accidental self-invocation | The existing `allow_implicit_invocation: false` policy is now locked by a regression check. | Safeguard added |
 
@@ -38,9 +38,16 @@ The Codex adaptation was checked against the official
 - Quiz MCP: 11 tests passed, including recursive pre-answer leakage checks,
   stable-value rejection on submission, persisted shuffle, path confinement,
   private atomic state, and an end-to-end STDIO MCP lifecycle.
-- Visual pipeline: 10 Node tests and 2 CLI-contract tests passed. Real Mermaid
-  and SVG fixtures rendered from the vault root and were inspected with
-  `view_image`; both were legible and unclipped.
+- Visual pipeline: 14 Node tests and 2 CLI-contract tests passed. An initial
+  independent end-to-end audit found that SVG text was absent from raster
+  output and that explicit macOS `/tmp` paths conflicted with canonical
+  `/private/tmp` paths. The renderer now uses a checksum-pinned bundled Noto
+  Sans font, and lexical workspace paths are securely rebased onto the
+  canonical root before existing confinement and symlink checks run. A fresh
+  SVG preview was inspected with `view_image`; `Force A`, `Force B`, and
+  `Net force = 0` were all present and unclipped. Publishing the inspected
+  preview with `/tmp` workspace and receipt arguments succeeded and produced
+  canonical `/private/tmp` output paths.
 - Teaching integration: 10 tests passed, including reciprocal session creation,
   exact active-check synchronization, resolvable Obsidian source links,
   closeout, and a factory-to-two-delayed-pass lifecycle.
@@ -48,12 +55,16 @@ The Codex adaptation was checked against the official
   invariant and named legacy migration behavior.
 - Skill packaging validation passed for `teach`, `retrieve`, and
   `learning-visuals`. `codex mcp list` recognized `learning_quiz` as enabled.
+- Across quiz, visual, teaching, and retrieval suites, 52 deterministic tests
+  passed after the two visual fixes.
 
 ## Evidence boundary
 
 Known: the deterministic implementations and tests above pass in this vault on
-2026-08-30. The answer key is stored locally in mode-restricted runtime state
-and is not returned by `register_quiz` or `present_quiz`.
+2026-08-31. The SVG font asset matches its pinned SHA-256 digest, and the
+corrected fixture preview visibly contains all three source labels. The answer
+key is stored locally in mode-restricted runtime state and is not returned by
+`register_quiz` or `present_quiz`.
 
 Inference: this closes the consequential safety and reliability differences
 that can be adapted through documented Codex MCP and local-script interfaces.

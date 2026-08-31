@@ -21,8 +21,10 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = path.resolve(SCRIPT_DIR, "..");
 const DEFAULT_WORKSPACE = path.resolve(SKILL_DIR, "../../../..");
 const DEFAULT_CACHE = path.join(SKILL_DIR, ".cache", "staged");
+const NOTO_SANS_REGULAR = path.join(SKILL_DIR, "assets", "NotoSans-Regular.ttf");
+const NOTO_SANS_SHA256 = "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5";
 const SCHEMA_VERSION = "learning-visual/v1";
-const PIPELINE_VERSION = "1.0.0";
+const PIPELINE_VERSION = "1.0.1";
 const MAX_SOURCE_BYTES = 256 * 1024;
 const RENDER_TIMEOUT_MS = 30_000;
 
@@ -82,6 +84,22 @@ function sha256(data) {
 function inside(child, parent) {
   const relative = path.relative(parent, child);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function mapIntoCanonicalWorkspace(target, lexicalWorkspace, workspace, description) {
+  const absolute = path.resolve(target);
+  if (inside(absolute, lexicalWorkspace)) {
+    return path.join(workspace, path.relative(lexicalWorkspace, absolute));
+  }
+  if (inside(absolute, workspace)) return absolute;
+  fail("PATH_ESCAPE", `${description} must be inside the workspace`);
+}
+
+async function resolveWorkspace(workspaceArg) {
+  const lexicalWorkspace = path.resolve(workspaceArg ?? DEFAULT_WORKSPACE);
+  const workspace = await fs.realpath(lexicalWorkspace);
+  await assertNoSymlinkPath(workspace, workspace);
+  return { lexicalWorkspace, workspace };
 }
 
 async function assertNoSymlinkPath(target, stopAt, allowMissingLeaf = false) {
@@ -331,12 +349,21 @@ async function renderMermaidPng(source) {
 
 async function renderSvgPng(source) {
   try {
+    const fontBytes = await fs.readFile(NOTO_SANS_REGULAR);
+    if (sha256(fontBytes) !== NOTO_SANS_SHA256) {
+      fail("FONT_INTEGRITY_FAILED", "Bundled Noto Sans does not match its pinned SHA-256 digest");
+    }
     return await withTimeout(
       Promise.resolve().then(() => {
         const renderer = new Resvg(source, {
           background: "white",
           fitTo: { mode: "width", value: 1200 },
-          font: { loadSystemFonts: false, defaultFontFamily: "sans-serif" },
+          font: {
+            fontFiles: [NOTO_SANS_REGULAR],
+            loadSystemFonts: false,
+            defaultFontFamily: "Noto Sans",
+            sansSerifFamily: "Noto Sans",
+          },
         });
         return Buffer.from(renderer.render().asPng());
       }),
@@ -381,20 +408,25 @@ async function atomicWrite(file, bytes, mode = 0o600, { createOnly = false } = {
 }
 
 async function resolveRoots(workspaceArg, cacheArg) {
-  const workspace = await fs.realpath(path.resolve(workspaceArg ?? DEFAULT_WORKSPACE));
-  await assertNoSymlinkPath(workspace, workspace);
-  const cache = path.resolve(cacheArg ?? DEFAULT_CACHE);
-  if (!inside(cache, workspace)) fail("PATH_ESCAPE", "Cache must be inside the workspace");
+  const roots = await resolveWorkspace(workspaceArg);
+  const cache = mapIntoCanonicalWorkspace(
+    cacheArg ?? DEFAULT_CACHE,
+    roots.lexicalWorkspace,
+    roots.workspace,
+    "Cache",
+  );
+  const { workspace } = roots;
   await mkdirSafe(cache, workspace);
-  return { workspace, cache };
+  return { ...roots, cache };
 }
 
 export async function stageVisual({ kind, source, name, workspace: workspaceArg, cacheDir }) {
   if (!new Set(["mermaid", "svg"]).has(kind)) fail("INVALID_KIND", "Kind must be 'mermaid' or 'svg'");
   validateName(name);
-  const { workspace, cache } = await resolveRoots(workspaceArg, cacheDir);
+  const { workspace, lexicalWorkspace, cache } = await resolveRoots(workspaceArg, cacheDir);
   const extension = kind === "mermaid" ? ".mmd" : ".svg";
-  const input = await readSafeSource(source, workspace, extension);
+  const sourcePath = mapIntoCanonicalWorkspace(source, lexicalWorkspace, workspace, "Source");
+  const input = await readSafeSource(sourcePath, workspace, extension);
   const validation = kind === "mermaid" ? validateMermaid(input.text) : validateSvg(input.text);
   const png = kind === "mermaid" ? await renderMermaidPng(input.text) : await renderSvgPng(input.text);
   const dimensions = pngDimensions(png);
@@ -422,6 +454,7 @@ export async function stageVisual({ kind, source, name, workspace: workspaceArg,
       mermaidCli: packageVersion("@mermaid-js/mermaid-cli"),
       puppeteer: packageVersion("puppeteer"),
       resvg: packageVersion("@resvg/resvg-js"),
+      svgFont: { family: "Noto Sans", sha256: NOTO_SANS_SHA256 },
       node: process.version,
       security: kind === "mermaid" ? "mermaid-strict" : "svg-hostile-allowlist",
     },
@@ -447,8 +480,8 @@ async function refuseExisting(files, workspace) {
 
 export async function publishVisual({ receipt: receiptArg, approvedPreviewSha256, workspace: workspaceArg }) {
   if (!/^[0-9a-f]{64}$/.test(approvedPreviewSha256 ?? "")) fail("BAD_APPROVAL", "approved-preview-sha256 must be a lowercase SHA-256 digest");
-  const workspace = await fs.realpath(path.resolve(workspaceArg ?? DEFAULT_WORKSPACE));
-  const receiptPath = path.resolve(receiptArg ?? "");
+  const { lexicalWorkspace, workspace } = await resolveWorkspace(workspaceArg);
+  const receiptPath = mapIntoCanonicalWorkspace(receiptArg ?? "", lexicalWorkspace, workspace, "Receipt");
   await assertNoSymlinkPath(receiptPath, workspace);
   const receipt = JSON.parse(await fs.readFile(receiptPath, "utf8"));
   if (receipt.schemaVersion !== SCHEMA_VERSION || receipt.pipelineVersion !== PIPELINE_VERSION || receipt.status !== "staged") {

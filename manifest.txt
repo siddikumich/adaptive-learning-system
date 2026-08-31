@@ -11,6 +11,9 @@
 .agents/skills/learning-visuals/agents/openai.yaml
 .agents/skills/learning-visuals/.gitignore
 .agents/skills/learning-visuals/.puppeteerrc.cjs
+.agents/skills/learning-visuals/assets/NotoSans-Regular.ttf
+.agents/skills/learning-visuals/assets/OFL-1.1.txt
+.agents/skills/learning-visuals/assets/README.md
 .agents/skills/learning-visuals/fixtures/dependency-map.mmd
 .agents/skills/learning-visuals/fixtures/vector-balance.svg
 .agents/skills/learning-visuals/package-lock.json

@@ -419,11 +419,12 @@ Deliver the selected explanatory visual beside the derivation or worked
 example, before the active check. Each node's status callout includes
 `> **Visual:** embedded — <relationship>`, `alternative — <reason>`,
 `not-needed — <reason>`, or `incomplete — <specific blocker and fallback>`.
-Embedded means a locally rendered, inspected PNG with its editable source;
-structural nodes use this unless a concrete alternative is clearer or blocked.
+Embedded means one inspected inline Mermaid block, or one locally rendered,
+inspected PNG with its editable source link; never both views of the same diagram.
+Structural nodes use this unless a concrete alternative is clearer or blocked.
 Quantitative plots use explicit source data/formulas, domain, axes, units, and
 assumptions. Do not invent measurements. Validation checks the declaration and
-local explanatory PNG presence, not the image's semantic relevance or truth.
+local explanatory PNG or inline Mermaid presence, not semantic relevance or truth.
 
 ## Phase 4 — Transfer and calibration
 
@@ -477,9 +478,13 @@ in [[Learning Research Sources]].
 - Verify arrow direction, labels, scale, states, clipping, and domain
   semantics. A correct render does not prove the represented claim.
 - Stage the exact editable source, render a preview PNG locally, inspect that
-  preview, publish only the receipt-approved bytes, inspect the final PNG, then
-  embed the PNG and link its editable source. Any missing render or inspection
-  fails closed: do not publish or claim visual verification.
+  preview, publish only the receipt-approved bytes, and inspect the final PNG.
+  Display Mermaid once as the exact inspected inline source; retain rendered
+  copies as inspection artifacts, not duplicate embeds. For SVG, embed the PNG
+  once and link the editable source. An image-only Mermaid fallback replaces
+  the inline block rather than supplementing it. This applies to planning maps
+  and lesson visuals. Any missing render or inspection fails closed: do not
+  publish or claim visual verification.
 - SVG must contain no scripts, event handlers, `foreignObject`, external
   references, embedded data URLs, doctypes, or entities.
 

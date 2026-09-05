@@ -123,15 +123,18 @@ check may show the supplied input graph but never its solution state graph or
 path.
 Each instructional Mermaid or SVG is rendered to a staged PNG, inspected with
 the image viewer, published only with a receipt approving those exact bytes,
-and inspected again at its final path. The note embeds the PNG and links the
-editable `.mmd` or `.svg`; failed or unavailable inspection blocks publication.
+and inspected again at its final path. Display Mermaid once as the exact
+inspected inline source; keep its rendered copies as inspection artifacts.
+For SVG, embed the PNG once and link the editable source. An image-only Mermaid
+fallback replaces the inline block, never duplicates it. Failed or unavailable
+inspection blocks publication.
 
 Every planned lesson also names the concept relationship to visualize and its
 best form. The teaching node delivers that graph, trace, plot, chart, or spatial
 SVG beside the explanation. Learning maps do not count as explanatory lesson
 visuals. Each node declares `Visual: embedded`, `alternative`, `not-needed`, or
 `incomplete`, with a concrete reason. New-session validation checks that a
-declared embedded visual actually has a local PNG inside the explanation;
+declared embedded visual has a local PNG or inline Mermaid inside the explanation;
 the teacher still inspects its rendering and verifies its meaning.
 
 The 2026-09-05 revision adds `diagnostic-coverage: "1"` and

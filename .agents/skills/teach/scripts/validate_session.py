@@ -150,11 +150,11 @@ def validate_diagnostic_coverage(learner_map: str, log: str, log_path: Path) -> 
     return errors
 
 
-def has_local_lesson_png(body: str, note_path: Path) -> bool:
-    # Check the explanatory lesson, not an input-only image in its active check.
-    explanation = body.split("#### Active check", 1)[0]
-    targets = re.findall(r"!\[\[([^\]|]+\.png)(?:\|[^\]]*)?\]\]", explanation, re.IGNORECASE)
-    targets += re.findall(r"!\[[^\]]*\]\(<?([^\n)]+?\.png)>?\)", explanation, re.IGNORECASE)
+def local_png_embeds(text: str, note_path: Path) -> list[Path]:
+    text = prose_outside_code(text)
+    targets = re.findall(r"!\[\[([^\]|]+\.png)(?:\|[^\]]*)?\]\]", text, re.IGNORECASE)
+    targets += re.findall(r"!\[[^\]]*\]\(<?([^\n)]+?\.png)>?\)", text, re.IGNORECASE)
+    found = []
     for target_text in targets:
         target = Path(target_text)
         if target.is_absolute() or ".." in target.parts:
@@ -166,9 +166,32 @@ def has_local_lesson_png(body: str, note_path: Path) -> bool:
                 matches = list((VAULT_ROOT / "Attachments" / "Learning Visuals").rglob(target.name))
                 if len(matches) == 1:
                     candidates.extend(matches)
-        if any(candidate.is_file() for candidate in candidates):
-            return True
-    return False
+        found.extend(candidate for candidate in candidates if candidate.is_file())
+    return list(dict.fromkeys(found))
+
+
+def mermaid_sources(text: str) -> set[str]:
+    blocks = re.findall(r"^```mermaid[ \t]*\n(.*?)^```[ \t]*$", text, re.MULTILINE | re.DOTALL)
+    return {"\n".join(line.strip() for line in block.strip().splitlines()) for block in blocks if block.strip()}
+
+
+def duplicate_mermaid_images(text: str, note_path: Path) -> list[Path]:
+    """Detect exact source duplicates from the pipeline's paired .mmd/.png files.
+
+    This is not visual or semantic equivalence detection. Distinct diagrams
+    and PNG-only delivery remain valid.
+    """
+    sources = mermaid_sources(text)
+    if not sources:
+        return []
+    duplicates = []
+    for png in local_png_embeds(text, note_path):
+        source = png.with_suffix(".mmd")
+        if source.is_file():
+            contents = source.read_text(encoding="utf-8")
+            if "\n".join(line.strip() for line in contents.strip().splitlines()) in sources:
+                duplicates.append(png)
+    return duplicates
 
 
 def validate_lesson_visual(body: str, note_path: Path) -> list[str]:
@@ -179,8 +202,10 @@ def validate_lesson_visual(body: str, note_path: Path) -> list[str]:
     if len(decisions) != 1:
         return ["requires one Visual callout decision with a concrete reason"]
     state, _ = decisions[0]
-    if state == "embedded" and not has_local_lesson_png(body, note_path):
-        return ["Visual is embedded but this node has no local explanatory PNG before its Active check"]
+    # Input-only diagrams in the active check cannot satisfy lesson delivery.
+    explanation = body.split("#### Active check", 1)[0]
+    if state == "embedded" and not (mermaid_sources(explanation) or local_png_embeds(explanation, note_path)):
+        return ["Visual is embedded but this node has no local explanatory PNG or inline Mermaid before its Active check"]
     return []
 
 
@@ -564,6 +589,10 @@ def validate(
             f"{note_path}: unsupported Obsidian math delimiter(s) "
             f"{', '.join(repr(item) for item in bad_math)}; use $...$ or $$...$$"
         )
+
+    if note_meta.get("lesson-visuals") == "1":
+        for png in duplicate_mermaid_images(note, note_path):
+            errors.append(f"{note_path}: duplicate Mermaid display: inline source and {png.name}; keep one visible representation")
 
     if note_meta.get("status") != "probing":
         goal = section(note, "Goal") or ""

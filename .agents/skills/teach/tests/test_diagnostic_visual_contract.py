@@ -111,6 +111,35 @@ class DiagnosticVisualContractTests(unittest.TestCase):
         self.replace("| Scoped foundation | Legal", "| Unrelated node | Legal")
         self.assertIn("missing from Lesson visual plan", self.errors())
 
+    def test_inline_mermaid_satisfies_lesson_without_a_png(self) -> None:
+        self.replace("alternative — the paired legal/illegal cases express the rule directly", "embedded — legal successor relation")
+        self.replace("#### Active check", '```mermaid\nflowchart LR\nn_a["Start"] --> n_b["Legal move"]\n```\n\n#### Active check')
+        self.assertEqual(self.errors(), "")
+
+    def test_input_only_or_empty_mermaid_does_not_satisfy_lesson(self) -> None:
+        self.replace("alternative — the paired legal/illegal cases express the rule directly", "embedded — legal successor relation")
+        self.replace("#### Active check", '```mermaid\n\n```\n\n#### Active check\n\n```mermaid\nflowchart LR\nn_a --> n_b\n```')
+        self.assertIn("no local explanatory PNG or inline Mermaid", self.errors())
+
+    def test_matching_mermaid_preview_is_rejected_but_distinct_image_is_allowed(self) -> None:
+        source = 'flowchart LR\nn_a["Start"] --> n_b["Legal move"]\n'
+        self.replace("## Learner map", f'## Learner map\n\n```mermaid\n{source}```\n\n![[preview.png]]')
+        (self.root / "preview.png").write_bytes(b"fixture")
+        (self.root / "preview.mmd").write_text(source, encoding="utf-8")
+        self.assertIn("duplicate Mermaid display", self.errors())
+        (self.root / "preview.mmd").write_text('flowchart TD\nn_x --> n_y\n', encoding="utf-8")
+        self.assertEqual(self.errors(), "")
+
+    def test_png_only_mermaid_and_nonembedded_source_link_are_allowed(self) -> None:
+        source = 'flowchart LR\nn_a --> n_b\n'
+        (self.root / "preview.png").write_bytes(b"fixture")
+        (self.root / "preview.mmd").write_text(source, encoding="utf-8")
+        self.replace("alternative — the paired legal/illegal cases express the rule directly", "embedded — legal successor relation")
+        self.replace("#### Active check", '![[preview.png]]\n[Editable source](preview.mmd)\n\n#### Active check')
+        self.assertEqual(self.errors(), "")
+        self.replace('![[preview.png]]', f'```mermaid\n{source}```\n[Inspection preview](preview.png)')
+        self.assertEqual(self.errors(), "")
+
 
 if __name__ == "__main__":
     unittest.main()

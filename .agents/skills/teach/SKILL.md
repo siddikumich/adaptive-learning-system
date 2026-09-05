@@ -545,7 +545,8 @@ contrast`, beside the mechanism it explains. Planning maps do not count.
 Add a line to each node's status callout using one of these exact forms:
 
 - `> **Visual:** embedded — <relationship the learner should inspect>`:
-  include a locally rendered PNG in this node, plus its editable source link;
+  include one inspected inline Mermaid block, or one locally rendered PNG
+  plus its editable source link; never both views of the same diagram;
 - `> **Visual:** alternative — <why the actual table/code trace/equation here is clearer>`;
 - `> **Visual:** not-needed — <why this node has no useful visual relationship>`;
 - `> **Visual:** incomplete — <specific rendering/inspection blocker and fallback>`.
@@ -573,8 +574,12 @@ returns editable `.mmd` or `.svg` source, the parent must:
 3. publish only the inspected bytes with the returned `receiptPath` and
    `previewSha256` via `publish --receipt ... --approved-preview-sha256 ...
    --workspace /absolute/path/to/vault`;
-4. inspect the returned final `pngPath` with `view_image`, then embed that PNG
-   in the lesson and link the published editable source beside it.
+4. inspect the returned final `pngPath` with `view_image`. For Mermaid, display
+   the exact inspected source as one inline `mermaid` block; retain the PNG
+   and receipt as inspection artifacts without embedding a duplicate. For SVG,
+   embed the PNG once and link the editable source. An image-only Mermaid
+   fallback replaces the inline block and links the source; it never adds a
+   second view. This single-display rule also applies to both Phase 2 maps.
 
 Fail closed: when staging, either `view_image` inspection, receipt approval, or
 publication is unavailable or fails, do not publish or describe the visual as

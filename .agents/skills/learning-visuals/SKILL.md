@@ -77,6 +77,12 @@ Do not retry a failed visualizer repeatedly.
 ## Mermaid
 
 Write the complete source in a fenced `mermaid` block inside the active note.
+Show each diagram only once. For Mermaid, the inline block is the default
+reader-facing view; rendered PNG/SVG copies are inspection artifacts, not
+additional embeds. If an image-only fallback is needed, replace the inline
+block with one inspected image and a plain editable-source link. Do not show
+both representations of the same diagram. Keep distinct lesson diagrams.
+
 Prefer `flowchart TD` for prerequisite depth and `flowchart LR` for short
 processes. Keep node IDs stable and labels concise. Every arrow must have a
 verified direction; explain non-obvious dependency edges directly below the

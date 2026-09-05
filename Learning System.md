@@ -1,7 +1,7 @@
 ---
 type: guide
 status: active
-updated: 2026-08-30
+updated: 2026-09-05
 ---
 
 # Learning system
@@ -52,8 +52,11 @@ The division of labor is deliberate:
 - Original course material, official documentation, papers, runnable code,
   tests, and data remain the sources of truth.
 
-Start from [[Learning Session Template]]. The diagnostic phase brackets the
-relevant edge of knowledge rather than asking a fixed generic pretest. The plan
+Start from [[Learning Session Template]]. The diagnostic maps every strand
+needed for the full goal: a visible coverage inventory gets breadth first,
+then probes bracket the uncertain boundaries. Finding the first teaching node
+does not end the diagnostic. A capped or interrupted inventory stays explicitly
+partial, with deferred strands and their next probes visible in the plan. The plan
 is shown as an editable Mermaid dependency graph, stress-tests each proposed
 root, and requires approval before teaching. A materially vague learning goal
 gets one clarifying question rather than invented specificity. Teaching then
@@ -67,10 +70,12 @@ For state modeling, sufficiency determines correctness; eliminating redundant
 fields is a separate clarity and efficiency improvement.
 
 Keyed single-select diagnostics use a local answer-isolation boundary: the
-independent verifier registers the question, stable options, key, and feedback,
+independent verifier authors and registers the question, stable options, key,
+and feedback from the construct and sources in its own context,
 then returns only an opaque quiz ID. The teacher can present shuffled `A`–`T`
 tokens plus `0. I don't know`; it cannot see the key or feedback until Farhan
-submits one displayed token. If that tool boundary is unavailable, the system
+submits one displayed token through the quiz tool. This isolates the stored
+payload, not the teacher's ability to solve the displayed item. If that tool boundary is unavailable, the system
 uses an atomic constructed response or records that isolation was incomplete.
 
 Use Obsidian to read the canonical node lesson and dependency visuals. Use the
@@ -87,6 +92,13 @@ The reteach preserves already-correct components and isolates the remaining
 output instead of repeatedly requesting a full solution. Graph- and
 state-heavy nodes receive explanatory visuals by default, while answer-hidden
 visuals contain only the supplied input.
+The plan also names the relationship and visual form for each lesson. A
+learning map does not satisfy this: concept graphs, queue/state traces,
+spatial SVGs, and plots belong beside the mechanism in the lesson itself.
+Each taught node records the delivered visual or a concrete reason for a
+clearer alternative, unnecessary visual, or blocked rendering. The validator
+checks coverage and declared local image delivery for new sessions; source
+and visual review still determine whether either is meaningful.
 Instructional Mermaid and SVG visuals are staged locally, rendered to PNG,
 inspected before publication, published by a receipt tied to the inspected
 bytes, and inspected again at the final path. The lesson embeds the verified

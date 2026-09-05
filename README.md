@@ -8,6 +8,15 @@ artifacts.
 
 Current protocol: `2026-08-26.1`.
 
+Behavior revision: `2026-09-05`. Diagnosis now inventories and maps the full
+goal, with explicit partial coverage when strands must be deferred. Each
+teaching node also plans and delivers its own explanatory visual or records
+a concrete alternative/blocker; learning maps do not fulfill that role.
+New templates enable these additive checks with `diagnostic-coverage: "1"`
+and `lesson-visuals: "1"`. Existing retrieval state and learner evidence are
+not automatically rewritten. Structural checks do not prove domain coverage,
+visual relevance, or improved learning outcomes.
+
 ## Start here
 
 - [Portable specification](AI%20Learning%20System%20%E2%80%94%20Portable%20Specification.md)

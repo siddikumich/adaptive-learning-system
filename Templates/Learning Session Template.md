@@ -8,6 +8,8 @@ updated: "{{date:YYYY-MM-DD}}"
 source-note:
 session-log: "[[{{title}} — Session Log]]"
 protocol-version: "2026-08-26.1"
+diagnostic-coverage: "1"
+lesson-visuals: "1"
 interaction-mode: obsidian-read-cli-answer
 retrieval-schema: "1"
 retrieval-enabled: true
@@ -44,6 +46,13 @@ Current node:
 
 Status: `unknown`
 
+### Diagnostic coverage
+
+| Strand | Goal relevance | Evidence | Boundary | Coverage | Next action |
+| --- | --- | --- | --- | --- | --- |
+
+Diagnostic scope: full-goal
+
 ## Dependency plan
 
 ```mermaid
@@ -52,6 +61,11 @@ flowchart TD
   goal["Independent capability"]
   foundation --> goal
 ```
+
+### Lesson visual plan
+
+| Node | Relationship to explain | Form |
+| --- | --- | --- |
 
 ## Lessons
 

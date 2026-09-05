@@ -32,6 +32,8 @@ class SessionFactoryTests(unittest.TestCase):
         note_text = note.read_text(encoding="utf-8")
         log_text = log.read_text(encoding="utf-8")
         self.assertIn('protocol-version: "2026-08-26.1"', note_text)
+        self.assertIn('diagnostic-coverage: "1"', note_text)
+        self.assertIn('lesson-visuals: "1"', note_text)
         self.assertIn('session-log: "[[New Session — Session Log]]"', note_text)
         self.assertIn('source-note: "[[Source]]"', note_text)
         self.assertIn('session-note: "[[New Session]]"', log_text)

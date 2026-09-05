@@ -1,7 +1,7 @@
 ---
 type: reference
 status: active
-updated: 2026-08-30
+updated: 2026-09-05
 ---
 
 # Codex learning system
@@ -66,22 +66,34 @@ neither replaces Farhan's attempt or the primary artifact.
    note, asking one ungraded clarification only when ambiguity would change the
    plan.
 2. Uses parallel researcher and verifier agents for nontrivial topics.
-3. Probes each relevant prerequisite strand through a broad multiple-choice
+3. Inventories every strand needed for the full requested capability, then
+   probes breadth before deepening uncertain boundaries. The coverage ledger
+   distinguishes unprobed, floor-only, ceiling-only, bracketed, bounded, and
+   deferred strands; choosing the first teaching node does not finish diagnosis.
+   Probes each relevant prerequisite strand through a broad multiple-choice
    screen, adaptive selected-response items, and an atomic constructed check
    at the likely boundary. A Phase 1 construction requests one discriminating
-   component, never a full multi-field contract. The verifier registers keyed
+   component, never a full multi-field contract. The verifier authors and registers keyed
    selected-response items behind the local quiz boundary and returns only an
    opaque ID; the teacher sees shuffled `A`–`T`/`0` display tokens and no key
    until submission.
 4. Writes a precise learner-map table, a compact Mermaid evidence-frontier
    summary, and an editable Mermaid dependency DAG; classifies and stress-tests
-   every root, then waits for approval.
+   every root, explains why the first node is reachable but nontrivial, names
+   its task-relevant feedback signal, then waits for approval.
 5. Teaches exactly one node at a time: one cold attempt, then a complete
    persisted lesson with a rule, derivation, worked contrast, dependency
    connection, verification, and one fresh unscaffolded check. Reteaching keeps
-   correct components fixed and isolates the unresolved output.
+   correct components fixed and isolates the unresolved output. Discovery and
+   active checks sit at the learner's evidence frontier: overloaded tasks are
+   split, while mechanically easy checks become more discriminating.
 6. Requires a novel transfer task, records delayed retrieval prompts, and
    closes the same-day session as `awaiting-retrieval`.
+
+These choices use flow-compatible conditions
+as task-design heuristics. `$teach` does not promise, measure, or optimize the
+feeling of flow; observable production, verification, transfer, and delayed
+retrieval remain the success criteria.
 
 ## What `$retrieve` does
 
@@ -114,16 +126,28 @@ the image viewer, published only with a receipt approving those exact bytes,
 and inspected again at its final path. The note embeds the PNG and links the
 editable `.mmd` or `.svg`; failed or unavailable inspection blocks publication.
 
+Every planned lesson also names the concept relationship to visualize and its
+best form. The teaching node delivers that graph, trace, plot, chart, or spatial
+SVG beside the explanation. Learning maps do not count as explanatory lesson
+visuals. Each node declares `Visual: embedded`, `alternative`, `not-needed`, or
+`incomplete`, with a concrete reason. New-session validation checks that a
+declared embedded visual actually has a local PNG inside the explanation;
+the teacher still inspects its rendering and verifies its meaning.
+
+The 2026-09-05 revision adds `diagnostic-coverage: "1"` and
+`lesson-visuals: "1"` to new sessions. It does not rewrite older learner
+evidence or change retrieval protocol `2026-08-26.1`.
+
 ## Model routing
 
 | Role | Model | Reasoning | Boundary |
 | --- | --- | --- | --- |
-| Teacher/orchestrator | `gpt-5.6-sol` | `high` | Owns learner state, diagnosis, planning, and teaching |
+| Teacher/orchestrator | Active parent-session model | Session setting | Owns learner state, diagnosis, planning, and teaching |
 | Researcher | `gpt-5.6-terra` | `medium` | Reads and distills primary or authoritative sources |
 | Verifier | `gpt-5.6-terra` | `high` | Challenges keys, evidence, claims, edges, and visuals |
 | Visualizer | `gpt-5.6-luna` | `medium` | Formats a verified brief without choosing semantics |
 
-The teacher model is the local parent-session default. Specialist model and
+The teacher model follows the active session; it is not pinned by this skill. Specialist model and
 reasoning settings are pinned in their custom agent files. This split reduces
 Sol use for supporting work, but it does not remove account limits: every
 subagent consumes model work, and the loop cannot generate new instruction if
@@ -152,9 +176,10 @@ status.
   complete session goal is reserved for transfer.
 - Probe counts adapt to the topic and evidence rather than serving as a quota:
   roughly 4–7 for a narrow skill, 8–14 for a typical technical concept, and
-  12–18 for a broad prerequisite-heavy topic. Stop earlier when another answer
-  would not change the first teaching node; never exceed 18 in one sitting
-  without explicit learner agreement.
+  12–18 for a broad prerequisite-heavy topic. Stop when all relevant strands
+  are bracketed/bounded. At the cap, explicitly defer unresolved strands and
+  label the plan provisional; never exceed 18 in one sitting without explicit
+  learner agreement. More questions alone do not establish better coverage.
 - Selected-response success is at most `supported`; targeted unscaffolded
   production can demonstrate only the exact construct it exposes.
 - Feedback stays deferred while it could contaminate another diagnostic

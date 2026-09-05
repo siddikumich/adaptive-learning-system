@@ -43,6 +43,25 @@ For graph-search questions, distinguish two possible pictures:
 Do not draw a generic graph merely because the word “graph” appears. The
 visual must expose the exact relationship being learned or diagnosed.
 
+At planning time, record a lesson visual decision per teaching node: the
+relationship to explain and its best representation. Learner maps and
+prerequisite DAGs describe the learning process; they never count as the
+explanatory visual for the concept. Deliver that visual in the node's
+derivation or worked example, where the learner needs it. Examples of useful
+briefs are a supplied graph with frontier layers, a changing queue trace, two
+states with different legal futures, or a function plotted on specified axes.
+These are examples, not required content for every lesson.
+
+Use SVG for quantitative plots and spatial geometry that Mermaid cannot
+express. The teacher supplies the formula/data, domain, coordinates, units,
+and relevant assumptions; the visualizer must not invent values or turn an
+illustrative example into an empirical claim. Use a table or code trace when
+it exposes the mechanism more clearly. Record the node's `Visual` decision as
+`embedded`, `alternative`, `not-needed`, or `incomplete`, with a concrete
+reason. See the `$teach` contract for these callout fields and the staged
+render/inspect/publish commands. Keep source and PNG together; only claim
+inspection after looking at the rendered image.
+
 The teacher owns the verified semantic brief. When `learning_visualizer` is
 available, delegate only the formatting step to it with the exact nodes,
 edges, directions, labels, values, desired form, and anything the visual must

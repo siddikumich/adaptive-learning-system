@@ -1,9 +1,9 @@
 ---
 type: specification
 status: active
-version: 1.7
+version: 1.8
 protocol-version: "2026-08-26.1"
-updated: 2026-08-30
+updated: 2026-09-05
 tags:
   - learnings
   - systems
@@ -134,6 +134,10 @@ supporting evidence, not a substitute for the learner map or lessons.
 
 ### Retrieval v1 state
 
+New sessions also declare `diagnostic-coverage: "1"` and `lesson-visuals: "1"`
+for the 2026-09-05 full-goal coverage and explanatory-visual checks. These are
+additive; they do not rewrite old evidence or migrate retrieval state.
+
 New sessions use protocol `2026-08-26.1` and carry these session-note
 properties: `retrieval-schema: "1"`, `retrieval-enabled: true`,
 `retrieval-timezone: America/Detroit`, `retrieval-started`, `retrieval-stage`,
@@ -159,9 +163,13 @@ be emitted as part of a learner-facing prompt.
   complete Phase 3 teaching unit in the learner-facing note before presenting
   its explanation and active check.
 - When an answer-isolation tool is available, have an independent verifier
-  register each keyed single-select item and return only an opaque ID. The
+  author and register each keyed single-select item from a construct, source,
+  difficulty, and contamination brief, then return only an opaque ID. Do not
+  supply a parent-authored key and claim it was hidden from the parent. The
   teacher presents only shuffled display tokens/labels plus `I don't know` and
-  must not receive the key, stable values, or explanation before submission.
+  must not receive the stored key, stable values, or explanation before
+  submission. This isolates payloads, not the teacher's ability to solve the
+  visible question.
 - After the learner replies, record the response and assessment without
   rewriting learner-authored content; raw responses belong in the sidecar.
 - Use `$...$` for inline mathematics and `$$` on separate lines for display
@@ -231,11 +239,26 @@ For each goal-relevant strand:
    a ceiling.
 3. Narrow that bracket with a fresh item that distinguishes a slip, isolated
    gap, and systematic misconception.
-4. Stop when another probe would not change the first teaching node.
+4. Stop within that strand once its goal-relevant boundary is characterized;
+   continue across the remaining strands even when the first teaching node is clear.
 
 Floor, ceiling, and confirmation are evidence roles, not a mandatory three
 items per strand. Reuse valid cross-strand evidence and skip a confirmation
-that cannot change the first teaching node.
+that cannot change the full-goal learner map.
+
+Before the first probe, inventory every source-grounded strand needed for
+the requested capability in `### Diagnostic coverage` under the learner map.
+Use a table with columns `Strand | Goal relevance | Evidence | Boundary |
+Coverage | Next action`. Give the learner a link to this answer-free inventory.
+Sample every relevant strand before spending the budget on deep follow-ups.
+Coverage is `unprobed`, `floor-only`, `ceiling-only`, `bracketed`, `bounded`, or
+`deferred`. Bracketed means an observed success and miss/uncertainty locate the
+boundary. Bounded means a demonstrated goal-level ceiling or a confirmed
+entry-level gap; do not invent failure beyond scope or a success below the gap.
+Evidence links to actual sidecar headings; every next action is explicit.
+Write `Diagnostic scope: full-goal` once mapped, or `Diagnostic scope: partial`
+when any strand is deferred. A verifier audits whether the inventory actually
+covers every clause of the goal; a structurally valid table alone is not proof.
 
 Adapt the learner-facing diagnostic budget to the scope and answer pattern:
 
@@ -244,11 +267,13 @@ Adapt the learner-facing diagnostic budget to the scope and answer pattern:
 - broad, prerequisite-heavy topic: 12–18 and preferably split into smaller
   goals.
 
-There is no minimum. Stop earlier after consistent evidence or whenever
-another answer would not change the first teaching node. Patchy evidence and
-consequential suspected misconceptions justify the upper end. Do not exceed 18
-probes in one sitting without explicit learner agreement. At the cap, preserve
-unknowns and split the goal or diagnose remaining dependencies just in time.
+There is no count minimum. End when every relevant strand is bracketed or
+bounded. Consistent success means escalate within scope; a first miss means
+characterize it. Do not exceed 18 probes in one sitting without explicit
+learner agreement. At the cap, mark unresolved strands deferred with a reason
+and next probe; clearly present any resulting plan as provisional for approval.
+Do not silently defer strands just to begin teaching sooner. Four questions
+are sufficient only when their evidence covers the actual scoped goal.
 
 Use a hybrid diagnostic funnel:
 
@@ -268,8 +293,8 @@ Use a hybrid diagnostic funnel:
    discriminating output rather than a full solution by default.
 
 Phase 1 must not request a full multi-component contract such as
-`vertex | transitions | source | goal`. Select one component that can change
-the first teaching node. Reserve integration of the complete session goal for
+`vertex | transitions | source | goal`. Select one component that can refine
+the full-goal map. Reserve integration of the complete session goal for
 transfer; a Phase 3 check may integrate only its current node's components.
 
 Selected-response success is at most `supported`. Unscaffolded construction
@@ -281,6 +306,10 @@ strand. If feedback is revealed early, label later evidence
 `post-instruction` and require a fresh non-isomorphic item.
 
 ## Phase 2 — Verify and plan
+
+Unprobed, floor-only, or ceiling-only strands block a completed diagnostic.
+Explicit deferred strands make the plan provisional; explain their unknowns
+and next probes at the approval checkpoint.
 
 Run a fresh independent audit of:
 
@@ -323,6 +352,12 @@ Present and write to the note:
 3. editable Mermaid dependency graph;
 4. edge rationales and sources;
 5. planned transfer task and retrieval prompts.
+
+Add `### Lesson visual plan` under the dependency plan, with a table:
+`Node | Relationship to explain | Form`. Cover each teaching node. Concept
+graphs, queue/state traces, spatial SVGs, plots, and charts are explanatory
+forms; learner maps and dependency DAGs do not fulfill this need. State why a
+table, code, equation, or prose is clearer when no image is useful.
 
 Stop for explicit learner approval. Do not begin the first node in the
 planning response.
@@ -379,6 +414,16 @@ diagram, typed signature, or executable example.
 The chat response contains the current node/path, the exact lesson heading,
 and the same active check copied verbatim. It does not paraphrase the lesson
 into a competing version.
+
+Deliver the selected explanatory visual beside the derivation or worked
+example, before the active check. Each node's status callout includes
+`> **Visual:** embedded — <relationship>`, `alternative — <reason>`,
+`not-needed — <reason>`, or `incomplete — <specific blocker and fallback>`.
+Embedded means a locally rendered, inspected PNG with its editable source;
+structural nodes use this unless a concrete alternative is clearer or blocked.
+Quantitative plots use explicit source data/formulas, domain, axes, units, and
+assumptions. Do not invent measurements. Validation checks the declaration and
+local explanatory PNG presence, not the image's semantic relevance or truth.
 
 ## Phase 4 — Transfer and calibration
 
@@ -497,7 +542,7 @@ topic:
   check at a consequential or uncertain boundary;
 - brackets a floor and ceiling without teaching through the diagnosis;
 - adapts probe count to topic scope and plan-changing uncertainty, stops early
-  when the first node is clear, and requires explicit learner agreement beyond
+  when the full-goal frontier is mapped, visibly defers gaps at the cap, and requires explicit learner agreement beyond
   18 probes in one sitting;
 - records evidence type separately from confidence;
 - performs an independent verification pass and handles an invalid item;
@@ -564,7 +609,7 @@ As of 2026-08-30, the local implementation maps this specification to:
   coverage.
 
 These paths are implementation details. [[Codex Learning System]] explains how
-to invoke the current Sol High teacher and the role-specific model adapter.
+to invoke the active session's teacher and the role-specific model adapter.
 
 ## Related
 

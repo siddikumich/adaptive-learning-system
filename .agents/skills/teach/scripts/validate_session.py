@@ -86,6 +86,104 @@ def normalized(text: str) -> str:
     return " ".join(text.split())
 
 
+def named_table(text: str, heading: str, columns: tuple[str, ...]) -> list[dict[str, str]]:
+    """Read a small protocol table; prose and unrelated tables cannot fill it."""
+    blocks = re.findall(
+        rf"^### {re.escape(heading)}\s*\n(.*?)(?=^### |^## |\Z)",
+        text, re.MULTILINE | re.DOTALL,
+    )
+    if len(blocks) != 1:
+        raise ValueError(f"requires exactly one '### {heading}'")
+    lines = [line.strip() for line in blocks[0].splitlines() if line.strip().startswith("|")]
+    cells = []
+    for line in lines:
+        protected = re.sub(
+            r"\[\[[^\]]+\]\]", lambda match: match.group(0).replace("|", "\0"), line,
+        ).replace(r"\|", "\0")
+        cells.append(tuple(cell.strip().replace("\0", "|") for cell in protected.strip("|").split("|")))
+    if len(cells) < 3 or cells[0] != columns:
+        raise ValueError(f"{heading} requires a populated table with columns: " + ", ".join(columns))
+    if len(cells[1]) != len(columns) or not all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells[1]):
+        raise ValueError(f"{heading} has an invalid table separator")
+    rows = []
+    for row in cells[2:]:
+        if len(row) != len(columns) or not all(row):
+            raise ValueError(f"{heading} has a blank field or malformed row")
+        rows.append(dict(zip(columns, row)))
+    names = [normalized(row[columns[0]]).casefold() for row in rows]
+    if len(names) != len(set(names)):
+        raise ValueError(f"{heading} has duplicate rows")
+    return rows
+
+
+def validate_diagnostic_coverage(learner_map: str, log: str, log_path: Path) -> list[str]:
+    try:
+        rows = named_table(learner_map, "Diagnostic coverage", (
+            "Strand", "Goal relevance", "Evidence", "Boundary", "Coverage", "Next action",
+        ))
+    except ValueError as error:
+        return [str(error)]
+    errors = []
+    log_headings = {
+        normalized(heading).casefold()
+        for heading in re.findall(r"^#{1,6} (.+)$", log, re.MULTILINE)
+    }
+    deferred = False
+    for row in rows:
+        state = row["Coverage"].strip("`")
+        if state not in {"bracketed", "bounded", "deferred"}:
+            errors.append(f"diagnostic strand {row['Strand']!r} remains {state!r}; map or explicitly defer it")
+        if state == "deferred":
+            deferred = True
+            continue
+        links = re.findall(r"\[\[([^\]#]+)#([^\]|]+)(?:\|[^\]]+)?\]\]", row["Evidence"])
+        if not links or any(
+            (linked_markdown_path(log_path, f"[[{target}]]") or Path()).resolve() != log_path.resolve()
+            or normalized(anchor).casefold() not in log_headings
+            for target, anchor in links
+        ):
+            errors.append(f"diagnostic strand {row['Strand']!r} needs resolvable sidecar evidence anchors")
+    scope = "partial" if deferred else "full-goal"
+    scopes = re.findall(r"^Diagnostic scope: (\S+)\s*$", learner_map, re.MULTILINE)
+    if scopes != [scope]:
+        errors.append(f"Diagnostic scope must be {scope!r}")
+    return errors
+
+
+def has_local_lesson_png(body: str, note_path: Path) -> bool:
+    # Check the explanatory lesson, not an input-only image in its active check.
+    explanation = body.split("#### Active check", 1)[0]
+    targets = re.findall(r"!\[\[([^\]|]+\.png)(?:\|[^\]]*)?\]\]", explanation, re.IGNORECASE)
+    targets += re.findall(r"!\[[^\]]*\]\(<?([^\n)]+?\.png)>?\)", explanation, re.IGNORECASE)
+    for target_text in targets:
+        target = Path(target_text)
+        if target.is_absolute() or ".." in target.parts:
+            continue
+        candidates = [note_path.parent / target]
+        if note_path.resolve().is_relative_to(VAULT_ROOT.resolve()):
+            candidates.append(VAULT_ROOT / target)
+            if target.parent == Path("."):
+                matches = list((VAULT_ROOT / "Attachments" / "Learning Visuals").rglob(target.name))
+                if len(matches) == 1:
+                    candidates.extend(matches)
+        if any(candidate.is_file() for candidate in candidates):
+            return True
+    return False
+
+
+def validate_lesson_visual(body: str, note_path: Path) -> list[str]:
+    decisions = re.findall(
+        r"^> \*\*Visual:\*\* (embedded|alternative|not-needed|incomplete) — (\S[^\n]*)$",
+        body, re.MULTILINE,
+    )
+    if len(decisions) != 1:
+        return ["requires one Visual callout decision with a concrete reason"]
+    state, _ = decisions[0]
+    if state == "embedded" and not has_local_lesson_png(body, note_path):
+        return ["Visual is embedded but this node has no local explanatory PNG before its Active check"]
+    return []
+
+
 def valid_iso_date(value: str) -> bool:
     """Return whether value is a real ISO calendar date."""
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
@@ -444,6 +542,9 @@ def validate(
     for path, metadata in ((note_path, note_meta), (log_path, log_meta)):
         if metadata.get("protocol-version") != PROTOCOL_VERSION:
             errors.append(f"{path}: protocol-version must be {PROTOCOL_VERSION}")
+    for field in ("diagnostic-coverage", "lesson-visuals"):
+        if field in note_meta and note_meta[field] != "1":
+            errors.append(f"{note_path}: unsupported {field} version")
 
     if note_meta.get("session-log") != f"[[{log_path.stem}]]":
         errors.append(f"{note_path}: session-log must link to [[{log_path.stem}]]")
@@ -492,6 +593,8 @@ def validate(
         evidence = re.search(r"^> \*\*Evidence:\*\* `([^`]+)`\s*$", body, re.MULTILINE)
         if not evidence or evidence.group(1) not in EVIDENCE_STATES:
             errors.append(f"{note_path}: {heading} has an invalid or missing evidence state")
+        if note_meta.get("lesson-visuals") == "1":
+            errors.extend(f"{note_path}: {heading}: {error}" for error in validate_lesson_visual(body, note_path))
 
     learner_map = section(note, "Learner map") or ""
     current_match = re.search(r"^Current node:\s*(.+?)\s*$", learner_map, re.MULTILINE)
@@ -506,7 +609,23 @@ def validate(
         errors.append(f"{note_path}: invalid learner-map status {current_status!r}")
 
     if note_meta.get("status") != "probing":
+        if note_meta.get("diagnostic-coverage") == "1":
+            errors.extend(
+                f"{note_path}: {error}"
+                for error in validate_diagnostic_coverage(learner_map, log, log_path)
+            )
         dependency_plan = section(note, "Dependency plan") or ""
+        if note_meta.get("lesson-visuals") == "1":
+            try:
+                visual_rows = named_table(dependency_plan, "Lesson visual plan", (
+                    "Node", "Relationship to explain", "Form",
+                ))
+                planned = {node_name(row["Node"]) for row in visual_rows}
+                for name in node_by_name:
+                    if name not in planned:
+                        errors.append(f"{note_path}: taught node {name!r} missing from Lesson visual plan")
+            except ValueError as error:
+                errors.append(f"{note_path}: {error}")
         root_ids, labels = dependency_roots(dependency_plan)
         audit_rows, audit_error = root_audit(dependency_plan)
         if audit_error:

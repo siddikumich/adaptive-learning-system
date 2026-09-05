@@ -7,6 +7,7 @@
 .agents/skills/teach/tests/test_policy_contract.py
 .agents/skills/teach/tests/test_session_factory.py
 .agents/skills/teach/tests/test_validate_session.py
+.agents/skills/teach/tests/test_diagnostic_visual_contract.py
 .agents/skills/learning-visuals/SKILL.md
 .agents/skills/learning-visuals/agents/openai.yaml
 .agents/skills/learning-visuals/.gitignore

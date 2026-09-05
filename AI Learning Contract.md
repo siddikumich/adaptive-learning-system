@@ -1,7 +1,7 @@
 ---
 type: guide
 status: active
-updated: 2026-08-30
+updated: 2026-09-05
 ---
 
 # AI learning contract
@@ -41,8 +41,11 @@ diagnostic quiz is a fast way to select the next task, not proof of mastery.
 Important nodes still require free explanation, construction, tracing,
 derivation, implementation, or transfer, followed by verification against an
 original artifact.
-For keyed single-select items, the local quiz boundary keeps the answer and
-feedback outside the teacher context until the response is submitted. If that
+For keyed single-select items, the verifier authors the item and registers its
+answer and feedback in a separate context. The local quiz boundary withholds
+that stored payload until submission; it cannot prevent the teacher from
+solving the visible question. A teacher-authored key was never hidden from that
+teacher and must not be described as such. If that
 boundary is unavailable, the teacher must say so and prefer a constructed
 response rather than imply that instructions alone hide the key.
 

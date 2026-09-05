@@ -11,6 +11,12 @@ and feedback coordinator; inspected artifacts remain the sources of truth.
 
 Current protocol version: `2026-08-26.1`.
 
+Behavior revision: `2026-09-05` — map the full goal before planning and deliver
+concept visuals inside lessons. New sessions declare `diagnostic-coverage: "1"`
+and `lesson-visuals: "1"`; these are additive checks, not a retrieval migration.
+On resume, preserve prior evidence and inventory untested strands before
+claiming a complete diagnostic. Never fabricate coverage to upgrade an old note.
+
 Read `Learning System.md` and `AI Learning Contract.md` before a substantial
 session. Preserve course policies and source constraints supplied by Farhan.
 
@@ -49,6 +55,20 @@ the current evidence state without continuing automatically.
 - Keep facts, inferences, and unknowns distinct. Cite primary or authoritative
   artifacts near consequential claims.
 - Probe only prerequisites that the stated independent capability depends on.
+- Calibrate challenge instead of maximizing it. Select a nontrivial atomic task
+  that remains reachable from demonstrated parent knowledge and the current
+  node, with at least one plausible first move available to Farhan. If success
+  depends on multiple unsupported nodes, split the task; if it can be completed
+  mechanically from disclosed material, increase its discrimination.
+- Give task-relevant feedback at the earliest point compatible with answer-key
+  isolation and diagnostic validity. Feedback identifies the observed output,
+  the exact gap or successful move, and the next adjustment; generic praise is
+  not feedback. When coupled diagnostic strands require deferred correction,
+  preserve that boundary and give the feedback when the bracket closes.
+- Treat flow-compatible conditions as task-design heuristics, not as the
+  session outcome or a promise to induce flow. Never use reported absorption,
+  enjoyment, effortlessness, or confidence as learner evidence; advancement
+  still requires observable production, verification, and transfer.
 - Separate correctness from economy. A representation may be future-sufficient
   yet redundant; call it correct but non-minimal rather than treating
   minimality as a correctness condition.
@@ -127,11 +147,15 @@ earlier checkpoint useful.
 When the local `register_quiz`, `present_quiz`, and `submit_quiz` tools are
 available, use them for every keyed single-select diagnostic item:
 
-1. Give `learning_verifier` the construct, inspected sources, question,
-   stable option values and labels, proposed key, explanation, and
-   vault-relative session-log path. The verifier audits the item, calls
-   `register_quiz`, and returns only its opaque `quiz_id`; it must not return
-   the key or explanation.
+1. Give `learning_verifier` only the construct, desired difficulty, inspected
+   sources, contamination constraints, and vault-relative session-log path.
+   The verifier authors and audits the question, parallel options, key, and
+   explanation in its own context, calls `register_quiz`, and returns only its opaque `quiz_id`;
+   it must not return the key or explanation. Do not author a proposed key in
+   the parent and then claim it was hidden from that parent. This separates
+   the stored answer payload; it cannot prevent a capable teacher from solving
+   the displayed question. If auditing a parent-authored item, label that
+   narrower boundary accurately in the sidecar.
 2. In the parent, call `present_quiz` with that `quiz_id`. Present its sanitized
    `prompt`, displayed token/label options (including `0. I don't know`), and
    `response_instruction` exactly, with no teaching prose, answer hint, stable
@@ -207,6 +231,22 @@ can be performed honestly and label the loss of independence. Agent progress
 or completion is never a learner reply. Inspect their cited artifacts before
 using their claims.
 
+Before the first probe, use the source pack and requested capability to list
+every goal-relevant strand under `### Diagnostic coverage` in the learner map.
+Use exactly: `Strand | Goal relevance | Evidence | Boundary | Coverage | Next action`.
+Give each strand a concrete connection to the goal. Preview this inventory in
+the note and give its link once; do not disclose diagnostic answers, example
+solutions, or keys. Present questions one at a time, adapting to each answer.
+
+Cover breadth before spending the budget on depth: get a meaningful response
+on each relevant strand, then revisit uncertain or consequential boundaries.
+A single item can cover several strands only when the actual response exposes
+each; bundled recognition is not independent proof of every component.
+For an implementation goal, the inventory must consider modeling, mechanism,
+correctness conditions, implementation/debugging, cost, and unfamiliar
+application; retain only strands justified by the sources and actual goal.
+These are examples, not a universal syllabus for every topic.
+
 Map each goal-relevant strand adaptively:
 
 1. Establish a floor with one meaningful success.
@@ -214,24 +254,48 @@ Map each goal-relevant strand adaptively:
    a ceiling.
 3. Narrow the bracket with a fresh item that distinguishes a slip, isolated
    gap, and systematic misconception.
-4. Stop when another probe would not change the first teaching node.
+4. Stop probing that strand when its boundary is characterized within the
+   goal. Continue to the other strands even when the first teaching node is clear.
 
 Floor, ceiling, and confirmation are evidence roles, not a mandatory three
-questions for every strand. Reuse an item when it validly discriminates
-multiple related strands, and skip confirmation when it cannot change the
-plan. Set the diagnostic budget from topic scope and observed answer pattern:
+questions for every strand. Reuse valid evidence; do not repeat easy items to
+inflate the count. Update coverage after every response:
+
+- `unprobed`: no usable response;
+- `floor-only`: success, but the relevant upper boundary is still untested;
+- `ceiling-only`: a miss or uncertainty without an established floor or a
+  confirmed entry-level gap; probe a simpler case before concluding;
+- `bracketed`: log-linked success and miss or honest uncertainty characterize
+  the boundary, with a slip distinguished where consequential;
+- `bounded`: the goal's upper level was demonstrated without needing to fail
+  at an irrelevant harder task, or a confirmed entry-level gap leaves no
+  demonstrated floor. State which limit applies; do not invent a floor/ceiling;
+- `deferred`: explicitly untested or unresolved, with a reason and a concrete
+  next probe or narrower scope. Never describe this as fully mapped.
+
+The Evidence cell links to actual sidecar question/response anchors. Boundary
+states what those responses establish and leave uncertain; Next action is
+nonblank, including `none — boundary mapped` when appropriate.
+Write `Diagnostic scope: full-goal` below the table once all strands are
+mapped, or `Diagnostic scope: partial` whenever any strand is deferred.
+Set the diagnostic budget from topic scope and observed answer pattern:
 
 - narrow skill or definition: usually 4–7 learner-facing probes;
 - typical technical concept: usually 8–14;
 - broad, prerequisite-heavy topic: 12–18, preferably split into smaller goals.
 
-There is no minimum. Use the lower end after consistent success or consistent
-misses, and the upper end for patchy evidence or a consequential suspected
-misconception. Stop early whenever the first teaching node is already clear.
+There is no question-count minimum. Four questions can suffice for a narrow
+goal only if their evidence covers its actual strands. Consistent success
+means escalate within scope; a first miss means characterize it, not end the
+whole diagnostic. Stop only when all relevant strands are `bracketed` or
+`bounded`, or explicitly `deferred` with the remaining uncertainty visible.
+Choosing the first teaching node is not the completion criterion.
 Do not exceed 18 probes in one sitting without Farhan's explicit agreement. If
-important strands remain unknown at the cap, preserve that uncertainty, split
-the goal or choose a conservative first node, and diagnose the remaining
-dependency just in time rather than extending the pretest automatically.
+important strands remain unknown at the cap, mark them `deferred`, explain
+that the diagnostic is partial, and include their next probes in the Phase 2
+approval request. The learner can approve a provisional path, narrow the goal,
+or continue mapping. A requested pause preserves the ledger without implying
+completion. Do not silently defer strands merely to start teaching sooner.
 
 Use this diagnostic funnel:
 
@@ -247,7 +311,7 @@ Use this diagnostic funnel:
    response that recognition cannot supply: one prediction, queue/state,
    invariant, explanation sentence, code fragment, derivation step, or model.
    Never request a multipart checklist. Split distinct constructs across turns
-   only when each result could change the learner map or first teaching node.
+   only when each result could change the full-goal learner map or teaching plan.
 4. When the goal requires application and it could change the plan, finish
    with one cold, unfamiliar integration probe. Request only the smallest
    discriminating output—such as the representation, algorithm choice with one
@@ -255,7 +319,7 @@ Use this diagnostic funnel:
 
 During Phase 1, never request a full contract such as
 `vertex | transitions | source | goal`; select exactly one component whose
-answer can change the first teaching node. Reserve integration of the complete
+answer can refine the full-goal learner map. Reserve integration of the complete
 session goal for Phase 4; a Phase 3 check may integrate only the components
 that define its current node.
 
@@ -270,7 +334,7 @@ a non-isomorphic item before treating it as diagnostic evidence.
 If a learner-facing recap, progress update, example, or prior explanation
 reveals a pending item's answer, invalidate the item immediately. Record the
 contamination, do not score it, and replace it only when the result could still
-change the first teaching node.
+change the full-goal learner map.
 
 Maintain the note's learner map with:
 
@@ -283,6 +347,12 @@ Maintain the note's learner map with:
 Confidence is learner-reported metadata, never proof.
 
 ## Phase 2 — Verify and plan
+
+Audit the diagnostic inventory against every clause of the independent
+capability and the inspected sources. Every relevant strand must be present;
+`unprobed`, `floor-only`, or `ceiling-only` blocks a completed diagnostic. A plan with `deferred`
+strands is provisional and must say so in the approval request. Do not let a
+clean diagram conceal unknown implementation, correctness, or transfer ability.
 
 Delegate a fresh independent verification of the observed learner map,
 consequential quiz keys, proposed foundations, dependency edges, and every
@@ -320,11 +390,21 @@ Update the note with:
 1. learner map: a compact Mermaid evidence-frontier summary followed by the
    precise table of known, boundary, misconceptions, unknowns, evidence types,
    and statuses;
-2. approach and why it fits this learner and outcome;
+2. approach and why it fits this learner and outcome, including why the first
+   node is reachable but nontrivial and which task-relevant signal will show
+   progress or error;
 3. an editable Mermaid dependency `flowchart` with stable, readable node IDs;
 4. edge rationales and sources;
 5. planned transfer task and delayed-retrieval structure. Author the exact
    prompts only at Phase 4, after the session's transfer evidence is known.
+
+Also write a compact `### Lesson visual plan` table under the dependency plan:
+`Node | Relationship to explain | Form`. Decide on a concept graph, annotated
+trace, plot/chart, spatial SVG, table, or a reason no visual helps for each
+planned teaching node. A learner map or prerequisite DAG never satisfies a
+lesson's explanatory-visual need. Derive plotted values from an inspected
+source, formula, or executable calculation, with axes, units, domain, and any
+illustrative assumptions explicit. Do not invent measured data.
 
 In chat, point to the exact learner-map and dependency-plan headings, state the
 selected approach in one sentence, and request approval. Do not generate a
@@ -363,7 +443,8 @@ Before explaining the central move, motivate the node and require exactly one
 cold prediction, construction, trace, derivation, debug, distinction, or
 explanation. Record the prompt in the sidecar before chat. If Farhan is stuck
 *before attempting*, a minimal graduated hint may preserve the central
-inference.
+inference. Calibrate this prompt to the evidence frontier: it may stretch the
+demonstrated floor, but it must not silently require a second unsupported node.
 
 ### Teaching and check turn
 
@@ -390,7 +471,9 @@ headings for future nodes. Within the node, use these level-four headings:
    `learning_verifier` when uncertainty matters.
 7. **Active check:** exactly one fresh, answer-hidden production task. It must
    be non-isomorphic to any example whose answer was revealed; never ask the
-   learner simply to restate the disclosed answer.
+   learner simply to restate the disclosed answer. Keep it nontrivial but
+   reachable from the demonstrated parents plus this taught node; split it if
+   another unsupported dependency would determine the result.
 
 For state or graph modeling, teach future sufficiency as the correctness
 criterion: the state must determine goal behavior and legal future outcomes.
@@ -456,6 +539,25 @@ labels; never reveal the composite state graph, path, or answer before the
 attempt. Other subjects still use visuals only when they reduce working-memory
 load. Give `learning_visualizer` a bounded, verified brief; keep domain
 reasoning with the teacher and verifier.
+
+Execute the lesson visual plan inside `Derivation` or `Worked example or
+contrast`, beside the mechanism it explains. Planning maps do not count.
+Add a line to each node's status callout using one of these exact forms:
+
+- `> **Visual:** embedded — <relationship the learner should inspect>`:
+  include a locally rendered PNG in this node, plus its editable source link;
+- `> **Visual:** alternative — <why the actual table/code trace/equation here is clearer>`;
+- `> **Visual:** not-needed — <why this node has no useful visual relationship>`;
+- `> **Visual:** incomplete — <specific rendering/inspection blocker and fallback>`.
+
+For a structural node, use `embedded` unless a concrete alternative is
+clearer or tooling is blocked. Never use `not-needed` merely because the
+dependency plan already has diagrams. For a plotted relationship, request SVG
+with explicit coordinates, axes, units, domain, and source-grounded values;
+Mermaid is not a substitute for a quantitative plot. The verifier checks
+whether the chosen representation explains this node and preserves the
+answer boundary. The deterministic validator checks declared delivery and
+local embed presence, not visual relevance or mathematical correctness.
 
 Every visual used for instruction or planning must pass the local staged
 render-and-inspect boundary from `$learning-visuals`. After the visualizer
